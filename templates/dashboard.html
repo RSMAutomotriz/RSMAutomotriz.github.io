@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard">
+    <div class="header">
+        <div class="brand">RSM Automotriz</div>
+        <div class="nav-buttons">
+            <a href="{{ url_for('nueva_mision') }}" class="button-action">Ingreso</a>
+            <a href="{{ url_for('ver_mision', id=1) }}" class="button-action">Buscar</a>
+            <a href="{{ url_for('logout') }}" class="button cerrar">Cerrar sesion</a>
+        </div>
+    </div>
+    
+    <div class="welcome-text">
+        <h1>Bienvenid@ {{ session['name'] }}</h1>
+    </div>
+
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='logorsmautomotriz.png') }}" alt="RSM Automotriz Logo">
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}

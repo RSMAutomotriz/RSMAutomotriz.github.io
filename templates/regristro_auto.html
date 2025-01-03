@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Registro Auto{% endblock %}
+{% block content %}
+<div class="boar">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <table class="missions-table">
+        <thead>
+            <tr>
+                <th>Propietario</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Año</th>
+                <th>Motor</th>
+                <th>Kilometraje</th>
+                <th>Chasis</th>
+                <th>Trabajo Realizado</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mission in missions %}
+            <tr>
+                <td>{{ mission[1] }}</td>
+                <td>{{ mission[6] }}</td>
+                <td>{{ mission[3] }}</td>
+                <td>{{ mission[4] }}</td>
+                <td class="actions">
+                    <a href="{{ url_for('ver_mision', id=mission[0]) }}" class="button button-small">Ver</a>
+                    {% if mission[5] == session['user_id'] %}
+                    <a href="{{ url_for('editar_mision', id=mission[0]) }}" class="button button-small button-primary">Editar</a>
+                    <a href="{{ url_for('borrar_mision', id=mission[0]) }}" class="button button-small button-danger" onclick="return confirm('¿Estás seguro de que deseas borrar esta misión?')">Borrar</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="cancel">
+        <a href="{{ url_for('dashboard') }}" class="button button-atras">Atras</a>
+    </div>
+</div>
+{% endblock %}

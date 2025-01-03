@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="boar">
+        <h1 class="tittle-car">Imágenes para matrícula: {{ matricula }}</h1>
+        
+        <div class="form-actions">
+            <a href="{{ url_for('subir_imagen', matricula=matricula) }}" class="button-action">
+                Subir nueva imagen
+            </a>
+            <a href="{{ url_for('buscar_auto') }}" class="button-action">Volver</a>
+        </div>
+
+        {% for fecha, imagenes in imagenes.items() %}
+            <div class="mission-form" style="margin-top: 2rem;">
+                <h2 class="date-header">{{ fecha }}</h2>
+                <div class="images-grid">
+                    {% for imagen in imagenes %}
+                        <div class="image-container" id="container-{{ imagen }}">
+                            <img src="{{ url_for('static', filename='uploads/' + imagen) }}" 
+                                 alt="Imagen del vehículo">
+                            <button onclick="eliminarImagen('{{ matricula }}', '{{ imagen }}')" 
+                                    class="delete-button">
+                                Eliminar
+                            </button>
+                            <div class="image-date">{{ fecha }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-error">
+                No hay imágenes disponibles para esta matrícula.
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function eliminarImagen(matricula, filename) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta imagen?')) {
+        fetch(`/eliminar-imagen/${matricula}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Eliminar el contenedor de la imagen del DOM
+                const container = document.getElementById(`container-${filename}`);
+                if (container) {
+                    container.remove();
+                    
+                    // Verificar si quedan imágenes en la fecha
+                    const fechaContainer = container.closest('.mission-form');
+                    const imagenesRestantes = fechaContainer.querySelectorAll('.image-container');
+                    if (imagenesRestantes.length === 0) {
+                        fechaContainer.remove();
+                    }
+                }
+                
+                // Verificar si quedan imágenes en total
+                const todasLasImagenes = document.querySelectorAll('.image-container');
+                if (todasLasImagenes.length === 0) {
+                    location.reload(); // Recargar si no quedan imágenes
+                }
+            } else {
+                alert('Error al eliminar la imagen: ' + (data.message || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar la imagen. Por favor, intente nuevamente.');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -207,13 +207,19 @@ def ver_mision(id):
     # En lugar de mostrar el mensaje de error, redirigimos a la página de búsqueda
     return redirect(url_for('buscar_auto'))
 
-@app.route('/mision/<int:id>/editar', methods=['GET', 'POST'])
+app.route('/mision/<int:id>/editar', methods=['GET', 'POST'])
 def editar_mision(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
+    
+    if request.method == 'POST':
+        try:
+            # Agregar logging detallado
+            print("Iniciando edición de misión...")
+            print("Datos del formulario:", request.form)    
     
     if request.method == 'POST':
         try:
@@ -247,6 +253,7 @@ def editar_mision(id):
             return redirect(url_for('buscar_auto'))
             
         except Exception as e:
+            print(f"Error detallado: {type(e).__name__}", str(e))  # Logging más detallado
             flash(f"Error al actualizar: {str(e)}")
             conn.rollback()
         finally:

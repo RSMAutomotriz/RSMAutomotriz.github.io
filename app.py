@@ -207,7 +207,7 @@ def ver_mision(id):
     # En lugar de mostrar el mensaje de error, redirigimos a la página de búsqueda
     return redirect(url_for('buscar_auto'))
 
-app.route('/mision/<int:id>/editar', methods=['GET', 'POST'])
+@app.route('/mision/<int:id>/editar', methods=['GET', 'POST'])
 def editar_mision(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -219,10 +219,8 @@ def editar_mision(id):
         try:
             # Agregar logging detallado
             print("Iniciando edición de misión...")
-            print("Datos del formulario:", request.form)    
-    
-    if request.method == 'POST':
-        try:
+            print("Datos del formulario:", request.form)
+            
             # Obtener los datos básicos del formulario
             name = request.form['name']
             matricula = request.form['matricula']
@@ -253,7 +251,7 @@ def editar_mision(id):
             return redirect(url_for('buscar_auto'))
             
         except Exception as e:
-            print(f"Error detallado: {type(e).__name__}", str(e))  # Logging más detallado
+            print(f"Error detallado: {type(e).__name__}", str(e))
             flash(f"Error al actualizar: {str(e)}")
             conn.rollback()
         finally:
@@ -278,7 +276,6 @@ def editar_mision(id):
     
     conn.close()
     return render_template('editar.html', trabajos=trabajos, auto=trabajos[0])
-
 @app.route('/eliminar_trabajo/<int:trabajo_id>', methods=['POST'])
 def eliminar_trabajo(trabajo_id):
     if 'user_id' not in session:

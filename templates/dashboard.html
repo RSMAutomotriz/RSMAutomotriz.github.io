@@ -6,14 +6,14 @@
         <div class="brand">RSM Automotriz</div>
         <div class="nav-buttons">
             <a href="{{ url_for('create_auto') }}" class="button-action">Ingreso</a>
-            <a href="{{ url_for('ver_mision', id=1) }}" class="button-action">Buscar</a>
+            <a href="{{ url_for('buscar') }}" class="button-action">Buscar</a>
             <a href="{{ url_for('logout') }}" class="button cerrar">Cerrar sesion</a>
         </div>
     </div>
     
     <div class="welcome-text">
-        <h1>Bienvenid@ {{ session['name'] }}</h1>
-    </div>
+          <h1>Bienvenid@ {{ session['user_name'] }}</h1>
+    </div> 
 
     <div class="logo-container">
         <img src="{{ url_for('static', filename='logorsmautomotriz.png') }}" alt="RSM Automotriz Logo">

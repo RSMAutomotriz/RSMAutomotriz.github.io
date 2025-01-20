@@ -65,6 +65,8 @@ def init_db():
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    return redirect(url_for('dashboard'))
+
     
     conn = get_db_connection()
     if conn is None:
@@ -153,12 +155,20 @@ def login():
         
         if user:
             session['user_id'] = user[0]
-            session['user_name'] = user[1]
-            return redirect(url_for('index'))
+            session['user_name'] = user[1]  # Aquí guardas el nombre
+            return redirect(url_for('dashboard'))  # Redirige al dashboard
         else:
             flash('Email o contraseña incorrectos')
     
     return render_template('login.html')
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    return render_template('dashboard.html', user_name=session.get('user_name'))
+
 
 @app.route('/logout')
 def logout():

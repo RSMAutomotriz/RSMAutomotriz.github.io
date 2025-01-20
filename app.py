@@ -65,7 +65,7 @@ def init_db():
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return redirect(url_for('dashboard'))  # Redirigir al dashboard si está autenticado
+    return redirect(url_for('dashboard'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -329,6 +329,36 @@ def buscar():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     return render_template('buscar.html')
+
+@app.route('/buscar_auto', methods=['POST'])
+def buscar_auto():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    matricula = request.form['matricula']
+    
+    conn = get_db_connection()
+    if conn is None:
+        flash("Error de conexión a la base de datos")
+        return redirect(url_for('buscar'))
+        
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT a.*, u.name as leader_name, u.lastname as leader_lastname 
+        FROM automovil a 
+        JOIN users u ON a.leader_id = u.id 
+        WHERE a.matricula = %s""", 
+        (matricula,))
+    auto = cur.fetchone()
+    
+    cur.close()
+    conn.close()
+    
+    if auto:
+        return redirect(url_for('view_auto', auto_id=auto[0]))
+    else:
+        flash('No se encontró ningún auto con esa matrícula')
+        return redirect(url_for('buscar'))
 
 if __name__ == '__main__':
     init_db()

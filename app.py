@@ -9,6 +9,7 @@ import datetime
 load_dotenv()
 
 app = Flask(__name__)
+port = int(os.environ.get("PORT", 5000))
 app.secret_key = 'MiyagiBestOsito'
 
 def get_db_connection():
@@ -319,4 +320,4 @@ def allowed_file(filename):
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=port)

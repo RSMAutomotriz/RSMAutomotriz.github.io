@@ -65,42 +65,7 @@ def init_db():
 def index():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
-    
-    conn = get_db_connection()
-    if conn is None:
-        flash("Error de conexión a la base de datos")
-        return render_template('index.html', autos=[])
-        
-    cur = conn.cursor()
-    
-    # Obtener autos donde el usuario es líder
-    cur.execute("""
-        SELECT a.*, COUNT(v.user_id) as volunteer_count 
-        FROM automovil a 
-        LEFT JOIN volunteers v ON a.id = v.car_id 
-        WHERE a.leader_id = %s 
-        GROUP BY a.id
-        ORDER BY a.date DESC""", 
-        (session['user_id'],))
-    autos_lider = cur.fetchall()
-    
-    # Obtener autos donde el usuario es voluntario
-    cur.execute("""
-        SELECT a.*, COUNT(v2.user_id) as volunteer_count 
-        FROM automovil a 
-        INNER JOIN volunteers v1 ON a.id = v1.car_id 
-        LEFT JOIN volunteers v2 ON a.id = v2.car_id 
-        WHERE v1.user_id = %s 
-        GROUP BY a.id
-        ORDER BY a.date DESC""", 
-        (session['user_id'],))
-    autos_voluntario = cur.fetchall()
-    
-    cur.close()
-    conn.close()
-    
-    return render_template('index.html', autos_lider=autos_lider, autos_voluntario=autos_voluntario)
+    return redirect(url_for('dashboard'))  # Redirigir al dashboard si está autenticado
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -166,8 +131,40 @@ def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    return render_template('dashboard.html')
-
+    conn = get_db_connection()
+    if conn is None:
+        flash("Error de conexión a la base de datos")
+        return render_template('dashboard.html', autos=[])
+        
+    cur = conn.cursor()
+    
+    # Obtener autos donde el usuario es líder
+    cur.execute("""
+        SELECT a.*, COUNT(v.user_id) as volunteer_count 
+        FROM automovil a 
+        LEFT JOIN volunteers v ON a.id = v.car_id 
+        WHERE a.leader_id = %s 
+        GROUP BY a.id
+        ORDER BY a.date DESC""", 
+        (session['user_id'],))
+    autos_lider = cur.fetchall()
+    
+    # Obtener autos donde el usuario es voluntario
+    cur.execute("""
+        SELECT a.*, COUNT(v2.user_id) as volunteer_count 
+        FROM automovil a 
+        INNER JOIN volunteers v1 ON a.id = v1.car_id 
+        LEFT JOIN volunteers v2 ON a.id = v2.car_id 
+        WHERE v1.user_id = %s 
+        GROUP BY a.id
+        ORDER BY a.date DESC""", 
+        (session['user_id'],))
+    autos_voluntario = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    return render_template('dashboard.html', autos_lider=autos_lider, autos_voluntario=autos_voluntario)
 
 @app.route('/logout')
 def logout():
@@ -326,6 +323,12 @@ def validate_registration(name, lastname, email, password, confirm_password):
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/buscar')
+def buscar():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('buscar.html')
 
 if __name__ == '__main__':
     init_db()

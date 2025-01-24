@@ -123,36 +123,43 @@ def init_db():
     
     cur = conn.cursor()
     
-    cur.execute('''CREATE TABLE IF NOT EXISTS users
-                (id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                lastname TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL)''')
+    # Crear tablas existentes
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            lastname VARCHAR(100) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(100) NOT NULL
+        )
+    ''')
     
-    cur.execute('''CREATE TABLE IF NOT EXISTS automovil
-                (id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                matricula TEXT NOT NULL,
-                marca TEXT NOT NULL,
-                model TEXT NOT NULL,
-                year INTEGER NOT NULL,
-                motor TEXT NOT NULL,
-                kl TEXT NOT NULL,
-                work TEXT NOT NULL,
-                date TEXT NOT NULL,
-                leader_id INTEGER NOT NULL REFERENCES users(id))''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS automovil (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            matricula VARCHAR(20) UNIQUE NOT NULL,
+            marca VARCHAR(100) NOT NULL,
+            model VARCHAR(100) NOT NULL,
+            year INTEGER NOT NULL,
+            motor VARCHAR(50) NOT NULL,
+            kl VARCHAR(50),
+            work TEXT,
+            date DATE,
+            leader_id INTEGER REFERENCES users(id)
+        )
+    ''')
     
-    cur.execute('''CREATE TABLE IF NOT EXISTS volunteers
-                (car_id INTEGER REFERENCES automovil(id),
-                user_id INTEGER REFERENCES users(id),
-                PRIMARY KEY (car_id, user_id))''')
-    
-    cur.execute('''CREATE TABLE IF NOT EXISTS imagenes_auto
-                (id SERIAL PRIMARY KEY,
-                matricula TEXT NOT NULL,
-                ruta_imagen TEXT NOT NULL,
-                fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # Agregar la tabla de imágenes
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS images (
+            id SERIAL PRIMARY KEY,
+            matricula VARCHAR(20) NOT NULL,
+            filename VARCHAR(255) NOT NULL,
+            upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (matricula) REFERENCES automovil(matricula)
+        )
+    ''')
     
     conn.commit()
     cur.close()
@@ -308,7 +315,7 @@ def create_auto():
                     image.save(filepath)
                     
                     cur.execute("""
-                        INSERT INTO imagenes_auto (matricula, ruta_imagen)
+                        INSERT INTO images (matricula, filename)
                         VALUES (%s, %s)""",
                         (matricula, filename))
         
@@ -356,7 +363,7 @@ def view_auto(auto_id):
     volunteers = cur.fetchall()
     
     # Obtener imágenes
-    cur.execute("SELECT ruta_imagen FROM imagenes_auto WHERE matricula = %s", (auto[2],))
+    cur.execute("SELECT filename FROM images WHERE matricula = %s", (auto[2],))
     images = cur.fetchall()
     
     cur.close()
@@ -485,6 +492,121 @@ def eliminar_trabajo(trabajo_id):
         return jsonify({'success': False, 'message': 'Error al eliminar el trabajo'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/ver_imagenes/<matricula>')
+def ver_imagenes(matricula):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Obtener imágenes organizadas por fecha
+    imagenes = get_images_by_matricula(matricula)
+    return render_template('ver_imagenes.html', matricula=matricula, imagenes=imagenes)
+
+@app.route('/subir_imagen/<matricula>', methods=['GET', 'POST'])
+def subir_imagen(matricula):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        if 'imagen' not in request.files:
+            flash('No se seleccionó ningún archivo')
+            return redirect(request.url)
+            
+        file = request.files['imagen']
+        if file.filename == '':
+            flash('No se seleccionó ningún archivo')
+            return redirect(request.url)
+            
+        if file and allowed_file(file.filename):
+            filename = secure_filename(f"{matricula}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            save_image_to_db(matricula, filename)
+            flash('Imagen subida exitosamente')
+            return redirect(url_for('ver_imagenes', matricula=matricula))
+            
+    return render_template('subir_imagen.html', matricula=matricula)
+
+@app.route('/eliminar-imagen/<matricula>/<filename>', methods=['POST'])
+def eliminar_imagen(matricula, filename):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'})
+    
+    try:
+        # Eliminar archivo físico
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Eliminar registro de la base de datos
+        delete_image_from_db(matricula, filename)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+# Funciones auxiliares para manejar imágenes
+def get_images_by_matricula(matricula):
+    conn = get_db_connection()
+    if conn is None:
+        return {}
+    
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT filename, upload_date 
+        FROM images 
+        WHERE matricula = %s 
+        ORDER BY upload_date DESC""", 
+        (matricula,))
+    
+    images = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    # Organizar imágenes por fecha
+    imagenes_por_fecha = {}
+    for img in images:
+        fecha = img[1].strftime('%Y-%m-%d')
+        if fecha not in imagenes_por_fecha:
+            imagenes_por_fecha[fecha] = []
+        imagenes_por_fecha[fecha].append(img[0])
+    
+    return imagenes_por_fecha
+
+def save_image_to_db(matricula, filename):
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO images (matricula, filename, upload_date) 
+        VALUES (%s, %s, NOW())""", 
+        (matricula, filename))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+def delete_image_from_db(matricula, filename):
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM images 
+        WHERE matricula = %s AND filename = %s""", 
+        (matricula, filename))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+# Configuración para subida de archivos
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if __name__ == '__main__':
     init_db()

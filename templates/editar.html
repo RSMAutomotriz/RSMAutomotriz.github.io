@@ -47,10 +47,10 @@
                 {% if trabajos %}
                     {% for trabajo in trabajos %}
                     <tr>
-                        <td><input type="date" name="date[]" value="{{ trabajo[9].strftime('%Y-%m-%d') if trabajo[9] else '' }}" required></td>
-                        <td><input type="text" name="kl[]" value="{{ trabajo[7] if trabajo[7] else '' }}" required></td>
+                        <td><input type="date" name="date[]" value="{{ trabajo[9] }}" required></td>
+                        <td><input type="text" name="kl[]" value="{{ trabajo[7] }}" required></td>
                         <td class="work-cell">
-                            <textarea name="work[]" class="work-input" required>{{ trabajo[8] if trabajo[8] else '' }}</textarea>
+                            <textarea name="work[]" class="work-input" required>{{ trabajo[8] }}</textarea>
                         </td>
                         <td>
                             <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">

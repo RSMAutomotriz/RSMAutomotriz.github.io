@@ -64,7 +64,9 @@
                 <tr>
                     <td><input type="date" name="date[]" value="{{ trabajo[9] }}" required></td>
                     <td><input type="text" name="kl[]" value="{{ trabajo[7] }}" required></td>
-                    <td><input type="text" name="work[]" value="{{ trabajo[8] }}" required></td>
+                    <td class="work-cell">
+                        <textarea name="work[]" class="work-input" required>{{ trabajo[8] }}</textarea>
+                    </td>
                     <td>
                         <button type="button" class="btn-eliminar" onclick="eliminarFila(this, {{ trabajo[0] }})">
                             <i class="fas fa-trash"></i> Eliminar
@@ -121,7 +123,9 @@
         nuevaFila.innerHTML = `
             <td><input type="date" name="date[]" value="${fechaHoy}" required></td>
             <td><input type="text" name="kl[]" required></td>
-            <td><input type="text" name="work[]" required></td>
+            <td class="work-cell">
+                <textarea name="work[]" class="work-input" required></textarea>
+            </td>
             <td>
                 <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
                     <i class="fas fa-trash"></i> Eliminar

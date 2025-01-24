@@ -33,6 +33,7 @@
             </div>
         </div>
 
+        <h2 class="subtitle">Historial de Trabajos</h2>
         <table class="work-table">
             <thead>
                 <tr>
@@ -43,20 +44,35 @@
                 </tr>
             </thead>
             <tbody id="workTableBody">
-                {% for trabajo in trabajos %}
-                <tr>
-                    <td><input type="date" name="date[]" value="{{ trabajo[9] }}" required></td>
-                    <td><input type="text" name="kl[]" value="{{ trabajo[7] }}" required></td>
-                    <td class="work-cell">
-                        <textarea name="work[]" class="work-input" required>{{ trabajo[8] }}</textarea>
-                    </td>
-                    <td>
-                        <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
+                {% if trabajos %}
+                    {% for trabajo in trabajos %}
+                    <tr>
+                        <td><input type="date" name="date[]" value="{{ trabajo[9].strftime('%Y-%m-%d') if trabajo[9] else '' }}" required></td>
+                        <td><input type="text" name="kl[]" value="{{ trabajo[7] }}" required></td>
+                        <td class="work-cell">
+                            <textarea name="work[]" class="work-input" required>{{ trabajo[8] }}</textarea>
+                        </td>
+                        <td>
+                            <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td><input type="date" name="date[]" value="{{ today }}" required></td>
+                        <td><input type="text" name="kl[]" required></td>
+                        <td class="work-cell">
+                            <textarea name="work[]" class="work-input" required></textarea>
+                        </td>
+                        <td>
+                            <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
         
@@ -73,7 +89,12 @@
 
 <script>
     function eliminarFila(boton) {
-        boton.closest('tr').remove();
+        const tbody = document.getElementById('workTableBody');
+        if (tbody.children.length > 1) {
+            boton.closest('tr').remove();
+        } else {
+            alert('Debe mantener al menos un registro de trabajo');
+        }
     }
     
     function agregarFila() {

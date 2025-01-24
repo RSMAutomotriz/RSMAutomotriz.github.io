@@ -671,6 +671,13 @@ def editar_mision(id):
     print(f"Auto encontrado: {auto}")
     print(f"Trabajos encontrados: {len(trabajos)}")
     
+    # Antes de enviar los datos al template, convertir la fecha a string si es necesario
+    if trabajos:
+        for i, trabajo in enumerate(trabajos):
+            if isinstance(trabajo[9], datetime.datetime):
+                trabajos[i] = list(trabajo)
+                trabajos[i][9] = trabajo[9].strftime('%Y-%m-%d')
+    
     return render_template('editar.html', 
                          auto=auto, 
                          trabajos=trabajos,

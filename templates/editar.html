@@ -5,7 +5,7 @@
     <h1 class="title">Detalles del Vehículo</h1>
     
     {% if auto %}
-    <form method="POST" action="{{ url_for('view_auto', id=auto[0]) }}">
+    <form method="POST" action="{{ url_for('editar_mision', id=auto[0]) }}">
         <div class="details-grid">
             <div class="detail-item">
                 <div class="label">Propietario:</div>

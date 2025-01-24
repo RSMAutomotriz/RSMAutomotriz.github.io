@@ -71,6 +71,7 @@ def get_trabajos(auto_id):
     
     try:
         cur = conn.cursor()
+        
         # Obtener la matrícula del auto
         cur.execute("SELECT matricula FROM automovil WHERE id = %s", (auto_id,))
         result = cur.fetchone()
@@ -82,11 +83,11 @@ def get_trabajos(auto_id):
         
         # Obtener todos los trabajos para esta matrícula
         cur.execute("""
-            SELECT * FROM automovil 
+            SELECT DISTINCT ON (date) *
+            FROM automovil 
             WHERE matricula = %s 
-            AND id != %s
-            ORDER BY date DESC
-            """, (matricula, auto_id))
+            ORDER BY date DESC, id DESC
+            """, (matricula,))
         trabajos = cur.fetchall()
         
         return trabajos
@@ -696,20 +697,31 @@ def editar_mision(id):
         
         # Obtener todos los trabajos relacionados
         cur.execute("""
-            SELECT * FROM automovil 
+            SELECT DISTINCT ON (date) *
+            FROM automovil 
             WHERE matricula = %s 
-            AND id != %s 
-            ORDER BY date DESC
-            """, (auto[2], id))
+            ORDER BY date DESC, id DESC
+            """, (auto[2],))
         trabajos = cur.fetchall()
         
-        print(f"Auto encontrado: {auto}")
-        print(f"Número de trabajos encontrados: {len(trabajos)}")
-        print(f"Trabajos: {trabajos}")
+        # Debug: imprimir los datos
+        print("Auto encontrado:", auto)
+        print("Matrícula:", auto[2])
+        print("Número de trabajos:", len(trabajos))
+        for trabajo in trabajos:
+            print("Trabajo:", trabajo)
+        
+        # Convertir fechas a formato string
+        trabajos_formatted = []
+        for trabajo in trabajos:
+            trabajo_list = list(trabajo)
+            if isinstance(trabajo[9], datetime.datetime):
+                trabajo_list[9] = trabajo[9].strftime('%Y-%m-%d')
+            trabajos_formatted.append(tuple(trabajo_list))
         
         return render_template('editar.html', 
                              auto=auto, 
-                             trabajos=trabajos,
+                             trabajos=trabajos_formatted,
                              today=datetime.datetime.now().strftime('%Y-%m-%d'))
                              
     except Exception as e:

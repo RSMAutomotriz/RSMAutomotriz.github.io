@@ -134,11 +134,12 @@ def init_db():
         )
     ''')
     
+    # Modificar la tabla automovil para asegurar que matricula sea única
     cur.execute('''
         CREATE TABLE IF NOT EXISTS automovil (
             id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
-            matricula VARCHAR(20) UNIQUE NOT NULL,
+            matricula VARCHAR(20) NOT NULL,
             marca VARCHAR(100) NOT NULL,
             model VARCHAR(100) NOT NULL,
             year INTEGER NOT NULL,
@@ -146,11 +147,12 @@ def init_db():
             kl VARCHAR(50),
             work TEXT,
             date DATE,
-            leader_id INTEGER REFERENCES users(id)
+            leader_id INTEGER REFERENCES users(id),
+            CONSTRAINT unique_matricula UNIQUE (matricula)
         )
     ''')
     
-    # Agregar la tabla de imágenes
+    # Crear la tabla de imágenes
     cur.execute('''
         CREATE TABLE IF NOT EXISTS images (
             id SERIAL PRIMARY KEY,
@@ -315,7 +317,7 @@ def create_auto():
                     image.save(filepath)
                     
                     cur.execute("""
-                        INSERT INTO images (matricula, filename)
+                        INSERT INTO imagenes_auto (matricula, ruta_imagen)
                         VALUES (%s, %s)""",
                         (matricula, filename))
         
@@ -363,7 +365,7 @@ def view_auto(auto_id):
     volunteers = cur.fetchall()
     
     # Obtener imágenes
-    cur.execute("SELECT filename FROM images WHERE matricula = %s", (auto[2],))
+    cur.execute("SELECT ruta_imagen FROM imagenes_auto WHERE matricula = %s", (auto[2],))
     images = cur.fetchall()
     
     cur.close()

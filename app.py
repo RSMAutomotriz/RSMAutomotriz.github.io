@@ -614,11 +614,6 @@ def editar_mision(id):
             kls = request.form.getlist('kl[]')
             works = request.form.getlist('work[]')
             
-            print("Datos recibidos del formulario:")
-            print(f"Fechas: {dates}")
-            print(f"Kilometrajes: {kls}")
-            print(f"Trabajos: {works}")
-            
             conn = get_db_connection()
             if conn is None:
                 flash('Error de conexión a la base de datos')
@@ -638,18 +633,7 @@ def editar_mision(id):
                 WHERE id = %s
                 """, (name, matricula, marca, model, year, motor, id))
             
-            # Obtener la matrícula anterior
-            cur.execute("SELECT matricula FROM automovil WHERE id = %s", (id,))
-            old_matricula = cur.fetchone()[0]
-            
-            # Eliminar trabajos anteriores
-            cur.execute("""
-                DELETE FROM automovil 
-                WHERE matricula = %s 
-                AND id != %s
-                """, (old_matricula, id))
-            
-            # Insertar los trabajos actualizados
+            # Insertar los nuevos trabajos
             for date, kl, work in zip(dates, kls, works):
                 if work.strip():  # Solo insertar si hay trabajo
                     cur.execute("""
@@ -664,7 +648,7 @@ def editar_mision(id):
             return redirect(url_for('buscar_auto'))
             
         except Exception as e:
-            print(f"Error en editar_mision: {e}")
+            print(f"Error al guardar: {e}")
             flash('Error al actualizar el vehículo')
             if 'conn' in locals():
                 conn.rollback()
@@ -697,19 +681,12 @@ def editar_mision(id):
         
         # Obtener todos los trabajos relacionados
         cur.execute("""
-            SELECT DISTINCT ON (date) *
-            FROM automovil 
+            SELECT * FROM automovil 
             WHERE matricula = %s 
-            ORDER BY date DESC, id DESC
-            """, (auto[2],))
+            AND id != %s
+            ORDER BY date DESC
+            """, (auto[2], id))
         trabajos = cur.fetchall()
-        
-        # Debug: imprimir los datos
-        print("Auto encontrado:", auto)
-        print("Matrícula:", auto[2])
-        print("Número de trabajos:", len(trabajos))
-        for trabajo in trabajos:
-            print("Trabajo:", trabajo)
         
         # Convertir fechas a formato string
         trabajos_formatted = []
@@ -725,7 +702,7 @@ def editar_mision(id):
                              today=datetime.datetime.now().strftime('%Y-%m-%d'))
                              
     except Exception as e:
-        print(f"Error en editar_mision GET: {e}")
+        print(f"Error al cargar datos: {e}")
         flash('Error al cargar los datos del vehículo')
         return redirect(url_for('buscar_auto'))
         

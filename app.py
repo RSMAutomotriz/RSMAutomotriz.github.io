@@ -123,45 +123,59 @@ def init_db():
     
     cur = conn.cursor()
     
-    # Crear tablas existentes
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            lastname VARCHAR(100) NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            password VARCHAR(100) NOT NULL
-        )
-    ''')
+    # Primero verificar si la columna matricula ya tiene la restricción única
+    cur.execute("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name = 'automovil' 
+        AND constraint_type = 'UNIQUE'
+        AND constraint_name = 'unique_matricula'
+    """)
     
-    # Modificar la tabla automovil para asegurar que matricula sea única
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS automovil (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            matricula VARCHAR(20) NOT NULL,
-            marca VARCHAR(100) NOT NULL,
-            model VARCHAR(100) NOT NULL,
-            year INTEGER NOT NULL,
-            motor VARCHAR(50) NOT NULL,
-            kl VARCHAR(50),
-            work TEXT,
-            date DATE,
-            leader_id INTEGER REFERENCES users(id),
-            CONSTRAINT unique_matricula UNIQUE (matricula)
-        )
-    ''')
+    if not cur.fetchone():
+        # Si no existe la restricción única, la agregamos
+        try:
+            cur.execute('''
+                ALTER TABLE automovil 
+                ADD CONSTRAINT unique_matricula UNIQUE (matricula)
+            ''')
+            conn.commit()
+        except Exception as e:
+            print(f"Error al agregar restricción única: {e}")
+            conn.rollback()
     
-    # Crear la tabla de imágenes
+    # Crear la tabla images si no existe
     cur.execute('''
         CREATE TABLE IF NOT EXISTS images (
             id SERIAL PRIMARY KEY,
             matricula VARCHAR(20) NOT NULL,
             filename VARCHAR(255) NOT NULL,
-            upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (matricula) REFERENCES automovil(matricula)
+            upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # Intentar agregar la llave foránea si no existe
+    cur.execute("""
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name = 'images' 
+        AND constraint_type = 'FOREIGN KEY'
+        AND constraint_name = 'fk_matricula'
+    """)
+    
+    if not cur.fetchone():
+        try:
+            cur.execute('''
+                ALTER TABLE images 
+                ADD CONSTRAINT fk_matricula 
+                FOREIGN KEY (matricula) 
+                REFERENCES automovil(matricula) 
+                ON DELETE CASCADE
+            ''')
+            conn.commit()
+        except Exception as e:
+            print(f"Error al agregar llave foránea: {e}")
+            conn.rollback()
     
     conn.commit()
     cur.close()

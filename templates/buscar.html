@@ -1,26 +1,29 @@
 {% extends "dashboard.html" %}
-{% block title %}Buscar Autos{% endblock %}
+{% block title %}Buscar Vehículo{% endblock %}
+
 {% block content %}
-<div class="search-container">
-    <div class="search-box">
-        <h2>Ingrese matrícula</h2>
-        <form action="{{ url_for('buscar_resultado') }}" method="POST">
-            <div class="form-group">
-                <input type="text" name="matricula" required>
-            </div>
-            <div class="button-group">
-                <button type="submit" class="button-action">Buscar</button>
-                <a href="{{ url_for('dashboard') }}" class="button-action">Volver</a>
-            </div>
-        </form>
-    </div>
+<div class="container_result">
+    <h1 class="title">Buscar Vehículo</h1>
     
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning">{{ message }}</div>
+                <div class="alert alert-info">{{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
+    
+    <form action="{{ url_for('buscar_auto') }}" method="POST">
+        <div class="search-container">
+            <input type="text" 
+                   name="matricula" 
+                   placeholder="Ingrese la matrícula del vehículo" 
+                   required 
+                   class="search-input">
+            <button type="submit" class="button-action">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+        </div>
+    </form>
 </div>
 {% endblock %}

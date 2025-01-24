@@ -639,7 +639,10 @@ def editar_mision(id):
     cur.close()
     conn.close()
     
-    return render_template('editar.html', auto=auto, trabajos=trabajos)
+    return render_template('editar.html', 
+                         auto=auto, 
+                         trabajos=trabajos,
+                         today=datetime.datetime.now().strftime('%Y-%m-%d'))
 
 @app.route('/eliminar_trabajo/<int:trabajo_id>', methods=['POST'])
 def eliminar_trabajo(trabajo_id):

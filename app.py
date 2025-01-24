@@ -72,37 +72,99 @@ def update_auto(id, name, matricula, marca, model, year, motor):
     if conn is None:
         return False
     
-    cur = conn.cursor()
-    cur.execute("""
-        UPDATE automovil 
-        SET name = %s, matricula = %s, marca = %s, model = %s, year = %s, motor = %s 
-        WHERE id = %s""",
-        (name, matricula, marca, model, year, motor, id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return True
+    try:
+        cur = conn.cursor()
+        
+        # Actualizar solo el auto principal
+        cur.execute("""
+            UPDATE automovil 
+            SET name = %s, matricula = %s, marca = %s, 
+                model = %s, year = %s, motor = %s 
+            WHERE id = %s AND leader_id IS NOT NULL
+            RETURNING id""", 
+            (name, matricula, marca, model, year, motor, id))
+        
+        # Verificar si se actualizó el registro
+        if cur.fetchone() is None:
+            conn.rollback()
+            return False
+        
+        # Actualizar los datos en los registros de trabajo relacionados
+        cur.execute("""
+            UPDATE automovil 
+            SET name = %s, matricula = %s, marca = %s, 
+                model = %s, year = %s, motor = %s 
+            WHERE id != %s AND leader_id IS NULL 
+            AND (
+                SELECT matricula 
+                FROM automovil 
+                WHERE id = %s
+            ) = matricula""", 
+            (name, matricula, marca, model, year, motor, id, id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        print(f"Error en update_auto: {e}")
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
 
 def update_trabajos(auto_id, dates, kls, works):
     conn = get_db_connection()
     if conn is None:
         return False
     
-    cur = conn.cursor()
-    # Primero eliminamos los trabajos existentes
-    cur.execute("DELETE FROM automovil WHERE id = %s", (auto_id,))
-    
-    # Luego insertamos los nuevos trabajos
-    for date, kl, work in zip(dates, kls, works):
+    try:
+        cur = conn.cursor()
+        
+        # Obtener los datos existentes del auto principal
         cur.execute("""
-            INSERT INTO automovil (date, kl, work, id) 
-            VALUES (%s, %s, %s, %s)""",
-            (date, kl, work, auto_id))
-    
-    conn.commit()
-    cur.close()
-    conn.close()
-    return True
+            SELECT name, matricula, marca, model, year, motor, leader_id 
+            FROM automovil 
+            WHERE id = %s AND leader_id IS NOT NULL""", 
+            (auto_id,))
+        auto_data = cur.fetchone()
+        
+        if not auto_data:
+            return False
+        
+        # Obtener los trabajos existentes para este auto
+        cur.execute("""
+            SELECT date, kl, work 
+            FROM automovil 
+            WHERE id != %s AND leader_id IS NULL 
+            ORDER BY date""", 
+            (auto_id,))
+        trabajos_existentes = set((str(t[0]), t[1], t[2]) for t in cur.fetchall())
+        
+        # Insertar solo los nuevos trabajos
+        for date, kl, work in zip(dates, kls, works):
+            # Verificar si este trabajo ya existe
+            if (str(date), kl, work) not in trabajos_existentes:
+                cur.execute("""
+                    INSERT INTO automovil 
+                    (name, matricula, marca, model, year, motor, kl, work, date, leader_id) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+                    """, 
+                    (auto_data[0], auto_data[1], auto_data[2], auto_data[3], 
+                     auto_data[4], auto_data[5], kl, work, date))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        print(f"Error en update_trabajos: {e}")
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
 
 def delete_trabajo(trabajo_id):
     conn = get_db_connection()

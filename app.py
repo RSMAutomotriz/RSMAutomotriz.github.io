@@ -44,44 +44,62 @@ def get_auto(id):
     if conn is None:
         return None
     
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM automovil WHERE id = %s", (id,))
-    auto = cur.fetchone()
-    cur.close()
-    conn.close()
-    return auto
+    try:
+        cur = conn.cursor()
+        # Obtener el auto principal (con leader_id)
+        cur.execute("""
+            SELECT * FROM automovil 
+            WHERE id = %s
+            """, (id,))
+        auto = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        return auto
+    except Exception as e:
+        print(f"Error en get_auto: {e}")
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
+        return None
 
 def get_trabajos(auto_id):
     conn = get_db_connection()
     if conn is None:
         return []
     
-    cur = conn.cursor()
-    
-    # Primero obtener la matrícula del auto
-    cur.execute("SELECT matricula FROM automovil WHERE id = %s", (auto_id,))
-    result = cur.fetchone()
-    
-    if not result:
+    try:
+        cur = conn.cursor()
+        # Primero obtener la matrícula del auto
+        cur.execute("SELECT matricula FROM automovil WHERE id = %s", (auto_id,))
+        result = cur.fetchone()
+        
+        if not result:
+            cur.close()
+            conn.close()
+            return []
+        
+        matricula = result[0]
+        
+        # Obtener todos los trabajos para esta matrícula
+        cur.execute("""
+            SELECT * FROM automovil 
+            WHERE matricula = %s 
+            ORDER BY date DESC
+            """, (matricula,))
+        trabajos = cur.fetchall()
+        
         cur.close()
         conn.close()
+        return trabajos
+    except Exception as e:
+        print(f"Error en get_trabajos: {e}")
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
         return []
-    
-    matricula = result[0]
-    
-    # Obtener todos los trabajos para esta matrícula
-    cur.execute("""
-        SELECT * FROM automovil 
-        WHERE matricula = %s 
-        AND leader_id IS NULL 
-        AND id != %s
-        ORDER BY date DESC
-        """, (matricula, auto_id))
-    trabajos = cur.fetchall()
-    
-    cur.close()
-    conn.close()
-    return trabajos
 
 def update_auto(id, name, matricula, marca, model, year, motor):
     conn = get_db_connection()
@@ -527,26 +545,54 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/buscar', methods=['GET'])
+@app.route('/buscar', methods=['GET', 'POST'])
 def buscar_auto():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('buscar.html')
-
-@app.route('/auto', methods=['POST'])
-def buscar_resultado():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-        
-    matricula = request.form.get('matricula')
-    auto = get_auto_by_matricula(matricula)
     
-    if auto:
-        trabajos = get_trabajos(auto[0])
-        return render_template('resultado.html', auto=auto, trabajos=trabajos)
-    else:
-        flash('No se encontró ningún vehículo con esa matrícula')
-        return redirect(url_for('buscar_auto'))
+    if request.method == 'POST':
+        matricula = request.form.get('matricula', '')
+        
+        conn = get_db_connection()
+        if conn is None:
+            flash('Error de conexión a la base de datos')
+            return render_template('buscar.html')
+        
+        try:
+            cur = conn.cursor()
+            # Buscar el auto principal
+            cur.execute("""
+                SELECT * FROM automovil 
+                WHERE matricula = %s
+                ORDER BY id ASC
+                LIMIT 1
+                """, (matricula,))
+            auto = cur.fetchone()
+            
+            if auto:
+                # Obtener todos los trabajos relacionados
+                cur.execute("""
+                    SELECT * FROM automovil 
+                    WHERE matricula = %s 
+                    ORDER BY date DESC
+                    """, (matricula,))
+                trabajos = cur.fetchall()
+                
+                return render_template('resultado.html', auto=auto, trabajos=trabajos)
+            else:
+                flash('No se encontró ningún vehículo con esa matrícula')
+        
+        except Exception as e:
+            print(f"Error en buscar_auto: {e}")
+            flash('Error al buscar el vehículo')
+        
+        finally:
+            if 'cur' in locals():
+                cur.close()
+            if 'conn' in locals():
+                conn.close()
+    
+    return render_template('buscar.html')
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar_mision(id):
@@ -555,7 +601,6 @@ def editar_mision(id):
     
     if request.method == 'POST':
         try:
-            # Obtener datos del formulario
             name = request.form.get('name')
             matricula = request.form.get('matricula')
             marca = request.form.get('marca')
@@ -563,7 +608,6 @@ def editar_mision(id):
             year = request.form.get('year')
             motor = request.form.get('motor')
             
-            # Obtener los arrays de trabajo
             dates = request.form.getlist('date[]')
             kls = request.form.getlist('kl[]')
             works = request.form.getlist('work[]')
@@ -584,34 +628,24 @@ def editar_mision(id):
                     model = %s, 
                     year = %s, 
                     motor = %s 
-                WHERE id = %s AND leader_id IS NOT NULL
+                WHERE id = %s
                 """, (name, matricula, marca, model, year, motor, id))
             
-            # Actualizar los trabajos existentes y agregar nuevos
+            # Actualizar o insertar trabajos
             for date, kl, work in zip(dates, kls, works):
                 if work.strip():  # Solo procesar si hay trabajo
-                    # Intentar actualizar si existe
                     cur.execute("""
-                        UPDATE automovil 
-                        SET kl = %s, work = %s, date = %s
-                        WHERE matricula = %s 
-                        AND date = %s 
-                        AND leader_id IS NULL
-                        """, (kl, work, date, matricula, date))
-                    
-                    # Si no se actualizó ningún registro, insertar uno nuevo
-                    if cur.rowcount == 0:
-                        cur.execute("""
-                            INSERT INTO automovil 
-                            (name, matricula, marca, model, year, motor, kl, work, date, leader_id) 
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
-                            """, 
-                            (name, matricula, marca, model, year, motor, kl, work, date))
+                        INSERT INTO automovil 
+                        (name, matricula, marca, model, year, motor, kl, work, date) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE 
+                        SET kl = EXCLUDED.kl,
+                            work = EXCLUDED.work,
+                            date = EXCLUDED.date
+                        """, 
+                        (name, matricula, marca, model, year, motor, kl, work, date))
             
             conn.commit()
-            cur.close()
-            conn.close()
-            
             flash('Vehículo actualizado exitosamente')
             return redirect(url_for('buscar_auto'))
             
@@ -620,45 +654,22 @@ def editar_mision(id):
             flash('Error al actualizar el vehículo')
             if 'conn' in locals():
                 conn.rollback()
+            
+        finally:
+            if 'cur' in locals():
                 cur.close()
+            if 'conn' in locals():
                 conn.close()
     
-    # GET request - mostrar formulario
-    conn = get_db_connection()
-    if conn is None:
-        flash('Error de conexión a la base de datos')
-        return redirect(url_for('buscar_auto'))
-    
-    cur = conn.cursor()
-    
-    # Obtener datos del auto principal
-    cur.execute("""
-        SELECT * FROM automovil 
-        WHERE id = %s AND leader_id IS NOT NULL
-        """, (id,))
-    auto = cur.fetchone()
-    
+    # GET request
+    auto = get_auto(id)
     if not auto:
         flash('Vehículo no encontrado')
-        cur.close()
-        conn.close()
         return redirect(url_for('buscar_auto'))
     
-    # Obtener todos los trabajos relacionados con esta matrícula
-    cur.execute("""
-        SELECT * FROM automovil 
-        WHERE matricula = %s 
-        AND leader_id IS NULL 
-        AND id != %s
-        ORDER BY date DESC
-        """, (auto[2], id))
-    trabajos = cur.fetchall()
-    
+    trabajos = get_trabajos(id)
     print(f"Auto encontrado: {auto}")
     print(f"Trabajos encontrados: {len(trabajos)}")
-    
-    cur.close()
-    conn.close()
     
     return render_template('editar.html', 
                          auto=auto, 

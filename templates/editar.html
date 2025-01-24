@@ -8,45 +8,28 @@
     <form method="POST" action="{{ url_for('editar_mision', id=auto[0]) }}">
         <div class="details-grid">
             <div class="detail-item">
-                <div class="label">Propietario:</div>
-                <div class="value">
-                    <input type="text" name="name" value="{{ auto[1] }}" required>
-                </div>
+                <label class="label">Nombre</label>
+                <input type="text" name="name" value="{{ auto[1] }}" required>
             </div>
-            
             <div class="detail-item">
-                <div class="label">Matrícula:</div>
-                <div class="value">
-                    <input type="text" name="matricula" value="{{ auto[2] }}" required>
-                </div>
+                <label class="label">Matrícula</label>
+                <input type="text" name="matricula" value="{{ auto[2] }}" required>
             </div>
-            
             <div class="detail-item">
-                <div class="label">Marca:</div>
-                <div class="value">
-                    <input type="text" name="marca" value="{{ auto[3] }}" required>
-                </div>
+                <label class="label">Marca</label>
+                <input type="text" name="marca" value="{{ auto[3] }}" required>
             </div>
-            
             <div class="detail-item">
-                <div class="label">Modelo:</div>
-                <div class="value">
-                    <input type="text" name="model" value="{{ auto[4] }}" required>
-                </div>
+                <label class="label">Modelo</label>
+                <input type="text" name="model" value="{{ auto[4] }}" required>
             </div>
-            
             <div class="detail-item">
-                <div class="label">Año:</div>
-                <div class="value">
-                    <input type="number" name="year" value="{{ auto[5] }}" required>
-                </div>
+                <label class="label">Año</label>
+                <input type="text" name="year" value="{{ auto[5] }}" required>
             </div>
-            
             <div class="detail-item">
-                <div class="label">Motor c.c:</div>
-                <div class="value">
-                    <input type="text" name="motor" value="{{ auto[6] }}" required>
-                </div>
+                <label class="label">Motor</label>
+                <input type="text" name="motor" value="{{ auto[6] }}" required>
             </div>
         </div>
 
@@ -68,7 +51,7 @@
                         <textarea name="work[]" class="work-input" required>{{ trabajo[8] }}</textarea>
                     </td>
                     <td>
-                        <button type="button" class="btn-eliminar" onclick="eliminarFila(this, {{ trabajo[0] }})">
+                        <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
                             <i class="fas fa-trash"></i> Eliminar
                         </button>
                     </td>
@@ -82,38 +65,15 @@
                 <i class="fas fa-plus"></i> Agregar Trabajo
             </button>
             <button type="submit" class="button-action">Guardar Cambios</button>
-            <a href="{{ url_for('buscar_auto') }}" class="button-action">Cancelar</a>        
+            <a href="{{ url_for('buscar_auto') }}" class="button-action">Cancelar</a>
         </div>
     </form>
     {% endif %}
 </div>
 
 <script>
-    function eliminarFila(boton, trabajoId) {
-        const tbody = document.getElementById('workTableBody');
-        const fila = boton.closest('tr');
-        
-        if (tbody.rows.length > 1) {
-            if (confirm('¿Estás seguro de eliminar este registro?')) {
-                fetch(`/eliminar_trabajo/${trabajoId}`, {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        fila.remove();
-                    } else {
-                        alert(data.message || 'Error al eliminar el registro');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al eliminar el registro');
-                });
-            }
-        } else {
-            alert('Debe mantener al menos una fila de trabajo');
-        }
+    function eliminarFila(boton) {
+        boton.closest('tr').remove();
     }
     
     function agregarFila() {

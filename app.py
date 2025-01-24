@@ -536,36 +536,108 @@ def buscar_resultado():
 def editar_mision(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-        
+    
     if request.method == 'POST':
-        name = request.form.get('name')
-        matricula = request.form.get('matricula')
-        marca = request.form.get('marca')
-        model = request.form.get('model')
-        year = request.form.get('year')
-        motor = request.form.get('motor')
-        
-        dates = request.form.getlist('date[]')
-        kls = request.form.getlist('kl[]')
-        works = request.form.getlist('work[]')
-        
-        # Primero actualizar el auto
-        if update_auto(id, name, matricula, marca, model, year, motor):
-            # Luego actualizar los trabajos
-            if update_trabajos(id, dates, kls, works):
-                flash('Vehículo actualizado exitosamente')
+        try:
+            # Obtener datos del formulario
+            name = request.form.get('name')
+            matricula = request.form.get('matricula')
+            marca = request.form.get('marca')
+            model = request.form.get('model')
+            year = request.form.get('year')
+            motor = request.form.get('motor')
+            
+            # Obtener los arrays de trabajo
+            dates = request.form.getlist('date[]')
+            kls = request.form.getlist('kl[]')
+            works = request.form.getlist('work[]')
+            
+            print("Datos recibidos:")
+            print(f"Auto: {name}, {matricula}, {marca}, {model}, {year}, {motor}")
+            print(f"Trabajos: {len(dates)} registros")
+            
+            conn = get_db_connection()
+            if conn is None:
+                flash('Error de conexión a la base de datos')
                 return redirect(url_for('buscar_auto'))
-            else:
-                flash('Error al actualizar los trabajos')
-        else:
+            
+            cur = conn.cursor()
+            
+            # Actualizar el auto principal
+            cur.execute("""
+                UPDATE automovil 
+                SET name = %s, 
+                    matricula = %s, 
+                    marca = %s, 
+                    model = %s, 
+                    year = %s, 
+                    motor = %s 
+                WHERE id = %s AND leader_id IS NOT NULL
+                """, (name, matricula, marca, model, year, motor, id))
+            
+            # Eliminar trabajos antiguos
+            cur.execute("""
+                DELETE FROM automovil 
+                WHERE matricula = %s AND leader_id IS NULL
+                """, (matricula,))
+            
+            # Insertar nuevos trabajos
+            for date, kl, work in zip(dates, kls, works):
+                if work.strip():  # Solo insertar si hay trabajo
+                    cur.execute("""
+                        INSERT INTO automovil 
+                        (name, matricula, marca, model, year, motor, kl, work, date, leader_id) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+                        """, 
+                        (name, matricula, marca, model, year, motor, kl, work, date))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            flash('Vehículo actualizado exitosamente')
+            return redirect(url_for('buscar_auto'))
+            
+        except Exception as e:
+            print(f"Error en editar_mision: {e}")
             flash('Error al actualizar el vehículo')
-        
-    auto = get_auto(id)
+            if 'conn' in locals():
+                conn.rollback()
+                cur.close()
+                conn.close()
+    
+    # GET request - mostrar formulario
+    conn = get_db_connection()
+    if conn is None:
+        flash('Error de conexión a la base de datos')
+        return redirect(url_for('buscar_auto'))
+    
+    cur = conn.cursor()
+    
+    # Obtener datos del auto
+    cur.execute("""
+        SELECT * FROM automovil 
+        WHERE id = %s AND leader_id IS NOT NULL
+        """, (id,))
+    auto = cur.fetchone()
+    
     if not auto:
         flash('Vehículo no encontrado')
+        cur.close()
+        conn.close()
         return redirect(url_for('buscar_auto'))
-        
-    trabajos = get_trabajos(id)
+    
+    # Obtener trabajos
+    cur.execute("""
+        SELECT * FROM automovil 
+        WHERE matricula = %s AND leader_id IS NULL 
+        ORDER BY date
+        """, (auto[2],))
+    trabajos = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
     return render_template('editar.html', auto=auto, trabajos=trabajos)
 
 @app.route('/eliminar_trabajo/<int:trabajo_id>', methods=['POST'])

@@ -428,7 +428,7 @@ def buscar_auto():
     return render_template('buscar.html')
 
 @app.route('/auto', methods=['POST'])
-def view_auto():
+def buscar_resultado():
     if 'user_id' not in session:
         return redirect(url_for('login'))
         

@@ -75,37 +75,45 @@ def update_auto(id, name, matricula, marca, model, year, motor):
     try:
         cur = conn.cursor()
         
-        # Actualizar solo el auto principal
+        # Actualizar el auto principal
         cur.execute("""
             UPDATE automovil 
-            SET name = %s, matricula = %s, marca = %s, 
-                model = %s, year = %s, motor = %s 
-            WHERE id = %s AND leader_id IS NOT NULL
-            RETURNING id""", 
+            SET name = %s, 
+                matricula = %s, 
+                marca = %s, 
+                model = %s, 
+                year = %s, 
+                motor = %s 
+            WHERE id = %s""", 
             (name, matricula, marca, model, year, motor, id))
         
-        # Verificar si se actualizó el registro
-        if cur.fetchone() is None:
+        # Actualizar la matrícula en los registros de trabajo
+        if cur.rowcount > 0:
+            cur.execute("""
+                UPDATE automovil 
+                SET name = %s, 
+                    matricula = %s, 
+                    marca = %s, 
+                    model = %s, 
+                    year = %s, 
+                    motor = %s 
+                WHERE matricula = (
+                    SELECT matricula 
+                    FROM automovil 
+                    WHERE id = %s
+                ) AND id != %s""", 
+                (name, matricula, marca, model, year, motor, id, id))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            return True
+        else:
+            print("No se encontró el auto para actualizar")
             conn.rollback()
+            cur.close()
+            conn.close()
             return False
-        
-        # Actualizar los datos en los registros de trabajo relacionados
-        cur.execute("""
-            UPDATE automovil 
-            SET name = %s, matricula = %s, marca = %s, 
-                model = %s, year = %s, motor = %s 
-            WHERE id != %s AND leader_id IS NULL 
-            AND (
-                SELECT matricula 
-                FROM automovil 
-                WHERE id = %s
-            ) = matricula""", 
-            (name, matricula, marca, model, year, motor, id, id))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        return True
         
     except Exception as e:
         print(f"Error en update_auto: {e}")
@@ -126,26 +134,23 @@ def update_trabajos(auto_id, dates, kls, works):
         cur.execute("""
             SELECT name, matricula, marca, model, year, motor, leader_id 
             FROM automovil 
-            WHERE id = %s AND leader_id IS NOT NULL""", 
+            WHERE id = %s""", 
             (auto_id,))
         auto_data = cur.fetchone()
         
         if not auto_data:
+            print("No se encontró el auto principal")
             return False
         
-        # Obtener los trabajos existentes para este auto
+        # Eliminar los trabajos existentes para este auto
         cur.execute("""
-            SELECT date, kl, work 
-            FROM automovil 
-            WHERE id != %s AND leader_id IS NULL 
-            ORDER BY date""", 
-            (auto_id,))
-        trabajos_existentes = set((str(t[0]), t[1], t[2]) for t in cur.fetchall())
+            DELETE FROM automovil 
+            WHERE matricula = %s AND leader_id IS NULL""", 
+            (auto_data[1],))
         
-        # Insertar solo los nuevos trabajos
+        # Insertar los trabajos actualizados
         for date, kl, work in zip(dates, kls, works):
-            # Verificar si este trabajo ya existe
-            if (str(date), kl, work) not in trabajos_existentes:
+            if work.strip():  # Solo insertar si hay trabajo
                 cur.execute("""
                     INSERT INTO automovil 
                     (name, matricula, marca, model, year, motor, kl, work, date, leader_id) 
@@ -544,12 +549,16 @@ def editar_mision(id):
         kls = request.form.getlist('kl[]')
         works = request.form.getlist('work[]')
         
+        # Primero actualizar el auto
         if update_auto(id, name, matricula, marca, model, year, motor):
+            # Luego actualizar los trabajos
             if update_trabajos(id, dates, kls, works):
                 flash('Vehículo actualizado exitosamente')
-                return redirect(url_for('view_auto', id=id))
-        
-        flash('Error al actualizar el vehículo')
+                return redirect(url_for('buscar_auto'))
+            else:
+                flash('Error al actualizar los trabajos')
+        else:
+            flash('Error al actualizar el vehículo')
         
     auto = get_auto(id)
     if not auto:

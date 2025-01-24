@@ -552,10 +552,6 @@ def editar_mision(id):
             kls = request.form.getlist('kl[]')
             works = request.form.getlist('work[]')
             
-            print("Datos recibidos:")
-            print(f"Auto: {name}, {matricula}, {marca}, {model}, {year}, {motor}")
-            print(f"Trabajos: {len(dates)} registros")
-            
             conn = get_db_connection()
             if conn is None:
                 flash('Error de conexión a la base de datos')
@@ -575,21 +571,26 @@ def editar_mision(id):
                 WHERE id = %s AND leader_id IS NOT NULL
                 """, (name, matricula, marca, model, year, motor, id))
             
-            # Eliminar trabajos antiguos
-            cur.execute("""
-                DELETE FROM automovil 
-                WHERE matricula = %s AND leader_id IS NULL
-                """, (matricula,))
-            
-            # Insertar nuevos trabajos
+            # Actualizar los trabajos existentes y agregar nuevos
             for date, kl, work in zip(dates, kls, works):
-                if work.strip():  # Solo insertar si hay trabajo
+                if work.strip():  # Solo procesar si hay trabajo
+                    # Intentar actualizar si existe
                     cur.execute("""
-                        INSERT INTO automovil 
-                        (name, matricula, marca, model, year, motor, kl, work, date, leader_id) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
-                        """, 
-                        (name, matricula, marca, model, year, motor, kl, work, date))
+                        UPDATE automovil 
+                        SET kl = %s, work = %s, date = %s
+                        WHERE matricula = %s 
+                        AND date = %s 
+                        AND leader_id IS NULL
+                        """, (kl, work, date, matricula, date))
+                    
+                    # Si no se actualizó ningún registro, insertar uno nuevo
+                    if cur.rowcount == 0:
+                        cur.execute("""
+                            INSERT INTO automovil 
+                            (name, matricula, marca, model, year, motor, kl, work, date, leader_id) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NULL)
+                            """, 
+                            (name, matricula, marca, model, year, motor, kl, work, date))
             
             conn.commit()
             cur.close()

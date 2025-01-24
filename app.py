@@ -71,13 +71,11 @@ def get_trabajos(auto_id):
     
     try:
         cur = conn.cursor()
-        # Primero obtener la matrícula del auto
+        # Obtener la matrícula del auto
         cur.execute("SELECT matricula FROM automovil WHERE id = %s", (auto_id,))
         result = cur.fetchone()
         
         if not result:
-            cur.close()
-            conn.close()
             return []
         
         matricula = result[0]
@@ -86,20 +84,22 @@ def get_trabajos(auto_id):
         cur.execute("""
             SELECT * FROM automovil 
             WHERE matricula = %s 
+            AND id != %s
             ORDER BY date DESC
-            """, (matricula,))
+            """, (matricula, auto_id))
         trabajos = cur.fetchall()
         
-        cur.close()
-        conn.close()
         return trabajos
+        
     except Exception as e:
         print(f"Error en get_trabajos: {e}")
+        return []
+        
+    finally:
         if 'cur' in locals():
             cur.close()
         if 'conn' in locals():
             conn.close()
-        return []
 
 def update_auto(id, name, matricula, marca, model, year, motor):
     conn = get_db_connection()
@@ -601,6 +601,7 @@ def editar_mision(id):
     
     if request.method == 'POST':
         try:
+            # Obtener datos del formulario
             name = request.form.get('name')
             matricula = request.form.get('matricula')
             marca = request.form.get('marca')
@@ -611,6 +612,11 @@ def editar_mision(id):
             dates = request.form.getlist('date[]')
             kls = request.form.getlist('kl[]')
             works = request.form.getlist('work[]')
+            
+            print("Datos recibidos del formulario:")
+            print(f"Fechas: {dates}")
+            print(f"Kilometrajes: {kls}")
+            print(f"Trabajos: {works}")
             
             conn = get_db_connection()
             if conn is None:
@@ -631,17 +637,24 @@ def editar_mision(id):
                 WHERE id = %s
                 """, (name, matricula, marca, model, year, motor, id))
             
-            # Actualizar o insertar trabajos
+            # Obtener la matrícula anterior
+            cur.execute("SELECT matricula FROM automovil WHERE id = %s", (id,))
+            old_matricula = cur.fetchone()[0]
+            
+            # Eliminar trabajos anteriores
+            cur.execute("""
+                DELETE FROM automovil 
+                WHERE matricula = %s 
+                AND id != %s
+                """, (old_matricula, id))
+            
+            # Insertar los trabajos actualizados
             for date, kl, work in zip(dates, kls, works):
-                if work.strip():  # Solo procesar si hay trabajo
+                if work.strip():  # Solo insertar si hay trabajo
                     cur.execute("""
                         INSERT INTO automovil 
                         (name, matricula, marca, model, year, motor, kl, work, date) 
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (id) DO UPDATE 
-                        SET kl = EXCLUDED.kl,
-                            work = EXCLUDED.work,
-                            date = EXCLUDED.date
                         """, 
                         (name, matricula, marca, model, year, motor, kl, work, date))
             
@@ -668,15 +681,15 @@ def editar_mision(id):
         return redirect(url_for('buscar_auto'))
     
     trabajos = get_trabajos(id)
-    print(f"Auto encontrado: {auto}")
-    print(f"Trabajos encontrados: {len(trabajos)}")
     
-    # Antes de enviar los datos al template, convertir la fecha a string si es necesario
+    # Convertir fechas a formato string para el template
     if trabajos:
+        trabajos = list(trabajos)
         for i, trabajo in enumerate(trabajos):
             if isinstance(trabajo[9], datetime.datetime):
-                trabajos[i] = list(trabajo)
-                trabajos[i][9] = trabajo[9].strftime('%Y-%m-%d')
+                trabajo_list = list(trabajo)
+                trabajo_list[9] = trabajo[9].strftime('%Y-%m-%d')
+                trabajos[i] = tuple(trabajo_list)
     
     return render_template('editar.html', 
                          auto=auto, 

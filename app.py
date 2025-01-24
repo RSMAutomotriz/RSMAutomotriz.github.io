@@ -8,7 +8,10 @@ import datetime
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, 
+    static_folder='../Organizador/static',
+    static_url_path='/static'
+)
 port = int(os.environ.get("PORT", 5000))
 app.secret_key = 'MiyagiBestOsito'
 
@@ -18,6 +21,100 @@ def get_db_connection():
     except Error as e:
         print(f"Error conectando a PostgreSQL: {e}")
         return None
+
+def get_auto_by_matricula(matricula):
+    conn = get_db_connection()
+    if conn is None:
+        return None
+    
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT a.*, u.name as recibido_por 
+        FROM automovil a 
+        JOIN users u ON a.leader_id = u.id 
+        WHERE a.matricula = %s""", 
+        (matricula,))
+    auto = cur.fetchone()
+    cur.close()
+    conn.close()
+    return auto
+
+def get_auto(id):
+    conn = get_db_connection()
+    if conn is None:
+        return None
+    
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM automovil WHERE id = %s", (id,))
+    auto = cur.fetchone()
+    cur.close()
+    conn.close()
+    return auto
+
+def get_trabajos(auto_id):
+    conn = get_db_connection()
+    if conn is None:
+        return []
+    
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT * FROM automovil 
+        WHERE id = %s 
+        ORDER BY date DESC""", 
+        (auto_id,))
+    trabajos = cur.fetchall()
+    cur.close()
+    conn.close()
+    return trabajos
+
+def update_auto(id, name, matricula, marca, model, year, motor):
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE automovil 
+        SET name = %s, matricula = %s, marca = %s, model = %s, year = %s, motor = %s 
+        WHERE id = %s""",
+        (name, matricula, marca, model, year, motor, id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+def update_trabajos(auto_id, dates, kls, works):
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    
+    cur = conn.cursor()
+    # Primero eliminamos los trabajos existentes
+    cur.execute("DELETE FROM automovil WHERE id = %s", (auto_id,))
+    
+    # Luego insertamos los nuevos trabajos
+    for date, kl, work in zip(dates, kls, works):
+        cur.execute("""
+            INSERT INTO automovil (date, kl, work, id) 
+            VALUES (%s, %s, %s, %s)""",
+            (date, kl, work, auto_id))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+def delete_trabajo(trabajo_id):
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    
+    cur = conn.cursor()
+    cur.execute("DELETE FROM automovil WHERE id = %s", (trabajo_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
 
 def init_db():
     conn = get_db_connection()
@@ -134,7 +231,7 @@ def dashboard():
     conn = get_db_connection()
     if conn is None:
         flash("Error de conexión a la base de datos")
-        return render_template('dashboard.html', autos=[])
+        return render_template('dashboard.html', autos_lider=[], autos_voluntario=[])
         
     cur = conn.cursor()
     
@@ -324,41 +421,70 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/buscar')
-def buscar():
+@app.route('/buscar', methods=['GET'])
+def buscar_auto():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     return render_template('buscar.html')
 
-@app.route('/buscar_auto', methods=['POST'])
-def buscar_auto():
+@app.route('/auto', methods=['POST'])
+def view_auto():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
-    matricula = request.form['matricula']
-    
-    conn = get_db_connection()
-    if conn is None:
-        flash("Error de conexión a la base de datos")
-        return redirect(url_for('buscar'))
         
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT a.*, u.name as leader_name, u.lastname as leader_lastname 
-        FROM automovil a 
-        JOIN users u ON a.leader_id = u.id 
-        WHERE a.matricula = %s""", 
-        (matricula,))
-    auto = cur.fetchone()
-    
-    cur.close()
-    conn.close()
+    matricula = request.form.get('matricula')
+    auto = get_auto_by_matricula(matricula)
     
     if auto:
-        return redirect(url_for('view_auto', auto_id=auto[0]))
+        trabajos = get_trabajos(auto[0])
+        return render_template('resultado.html', auto=auto, trabajos=trabajos)
     else:
-        flash('No se encontró ningún auto con esa matrícula')
-        return redirect(url_for('buscar'))
+        flash('No se encontró ningún vehículo con esa matrícula')
+        return redirect(url_for('buscar_auto'))
+
+@app.route('/editar/<int:id>', methods=['GET', 'POST'])
+def editar_mision(id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        name = request.form.get('name')
+        matricula = request.form.get('matricula')
+        marca = request.form.get('marca')
+        model = request.form.get('model')
+        year = request.form.get('year')
+        motor = request.form.get('motor')
+        
+        dates = request.form.getlist('date[]')
+        kls = request.form.getlist('kl[]')
+        works = request.form.getlist('work[]')
+        
+        if update_auto(id, name, matricula, marca, model, year, motor):
+            if update_trabajos(id, dates, kls, works):
+                flash('Vehículo actualizado exitosamente')
+                return redirect(url_for('view_auto', id=id))
+        
+        flash('Error al actualizar el vehículo')
+        
+    auto = get_auto(id)
+    if not auto:
+        flash('Vehículo no encontrado')
+        return redirect(url_for('buscar_auto'))
+        
+    trabajos = get_trabajos(id)
+    return render_template('editar.html', auto=auto, trabajos=trabajos)
+
+@app.route('/eliminar_trabajo/<int:trabajo_id>', methods=['POST'])
+def eliminar_trabajo(trabajo_id):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'})
+        
+    try:
+        if delete_trabajo(trabajo_id):
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'message': 'Error al eliminar el trabajo'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':
     init_db()

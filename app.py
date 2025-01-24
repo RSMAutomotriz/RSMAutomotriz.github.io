@@ -674,27 +674,54 @@ def editar_mision(id):
             if 'conn' in locals():
                 conn.close()
     
-    # GET request
-    auto = get_auto(id)
-    if not auto:
-        flash('Vehículo no encontrado')
+    # GET request - obtener datos
+    conn = get_db_connection()
+    if conn is None:
+        flash('Error de conexión a la base de datos')
         return redirect(url_for('buscar_auto'))
     
-    trabajos = get_trabajos(id)
-    
-    # Convertir fechas a formato string para el template
-    if trabajos:
-        trabajos = list(trabajos)
-        for i, trabajo in enumerate(trabajos):
-            if isinstance(trabajo[9], datetime.datetime):
-                trabajo_list = list(trabajo)
-                trabajo_list[9] = trabajo[9].strftime('%Y-%m-%d')
-                trabajos[i] = tuple(trabajo_list)
-    
-    return render_template('editar.html', 
-                         auto=auto, 
-                         trabajos=trabajos,
-                         today=datetime.datetime.now().strftime('%Y-%m-%d'))
+    try:
+        cur = conn.cursor()
+        
+        # Obtener el auto principal
+        cur.execute("""
+            SELECT * FROM automovil 
+            WHERE id = %s
+            """, (id,))
+        auto = cur.fetchone()
+        
+        if not auto:
+            flash('Vehículo no encontrado')
+            return redirect(url_for('buscar_auto'))
+        
+        # Obtener todos los trabajos relacionados
+        cur.execute("""
+            SELECT * FROM automovil 
+            WHERE matricula = %s 
+            AND id != %s 
+            ORDER BY date DESC
+            """, (auto[2], id))
+        trabajos = cur.fetchall()
+        
+        print(f"Auto encontrado: {auto}")
+        print(f"Número de trabajos encontrados: {len(trabajos)}")
+        print(f"Trabajos: {trabajos}")
+        
+        return render_template('editar.html', 
+                             auto=auto, 
+                             trabajos=trabajos,
+                             today=datetime.datetime.now().strftime('%Y-%m-%d'))
+                             
+    except Exception as e:
+        print(f"Error en editar_mision GET: {e}")
+        flash('Error al cargar los datos del vehículo')
+        return redirect(url_for('buscar_auto'))
+        
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
 
 @app.route('/eliminar_trabajo/<int:trabajo_id>', methods=['POST'])
 def eliminar_trabajo(trabajo_id):

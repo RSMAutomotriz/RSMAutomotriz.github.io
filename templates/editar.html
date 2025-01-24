@@ -80,8 +80,12 @@
             <button type="button" class="button-action" onclick="agregarFila()">
                 <i class="fas fa-plus"></i> Agregar Trabajo
             </button>
-            <button type="submit" class="button-action">Guardar Cambios</button>
-            <a href="{{ url_for('buscar_auto') }}" class="button-action">Cancelar</a>
+            <button type="submit" class="button-action">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <a href="{{ url_for('buscar_auto') }}" class="button-action">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
         </div>
     </form>
     {% endif %}

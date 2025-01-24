@@ -1,10 +1,10 @@
-{% extends "index.html" %}
+{% extends "dashboard.html" %}
 {% block title %}Buscar Autos{% endblock %}
 {% block content %}
 <div class="search-container">
     <div class="search-box">
         <h2>Ingrese matrícula</h2>
-        <form action="{{ url_for('view_auto') }}" method="POST">
+        <form action="{{ url_for('buscar_resultado') }}" method="POST">
             <div class="form-group">
                 <input type="text" name="matricula" required>
             </div>

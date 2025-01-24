@@ -57,12 +57,28 @@ def get_trabajos(auto_id):
         return []
     
     cur = conn.cursor()
+    
+    # Primero obtener la matrícula del auto
+    cur.execute("SELECT matricula FROM automovil WHERE id = %s", (auto_id,))
+    result = cur.fetchone()
+    
+    if not result:
+        cur.close()
+        conn.close()
+        return []
+    
+    matricula = result[0]
+    
+    # Obtener todos los trabajos para esta matrícula
     cur.execute("""
         SELECT * FROM automovil 
-        WHERE id = %s 
-        ORDER BY date DESC""", 
-        (auto_id,))
+        WHERE matricula = %s 
+        AND leader_id IS NULL 
+        AND id != %s
+        ORDER BY date DESC
+        """, (matricula, auto_id))
     trabajos = cur.fetchall()
+    
     cur.close()
     conn.close()
     return trabajos
@@ -615,7 +631,7 @@ def editar_mision(id):
     
     cur = conn.cursor()
     
-    # Obtener datos del auto
+    # Obtener datos del auto principal
     cur.execute("""
         SELECT * FROM automovil 
         WHERE id = %s AND leader_id IS NOT NULL
@@ -628,13 +644,18 @@ def editar_mision(id):
         conn.close()
         return redirect(url_for('buscar_auto'))
     
-    # Obtener trabajos
+    # Obtener todos los trabajos relacionados con esta matrícula
     cur.execute("""
         SELECT * FROM automovil 
-        WHERE matricula = %s AND leader_id IS NULL 
-        ORDER BY date
-        """, (auto[2],))
+        WHERE matricula = %s 
+        AND leader_id IS NULL 
+        AND id != %s
+        ORDER BY date DESC
+        """, (auto[2], id))
     trabajos = cur.fetchall()
+    
+    print(f"Auto encontrado: {auto}")
+    print(f"Trabajos encontrados: {len(trabajos)}")
     
     cur.close()
     conn.close()

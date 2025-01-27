@@ -9,7 +9,7 @@ import datetime
 load_dotenv()
 
 app = Flask(__name__, 
-    static_folder='../Organizador/static',
+    static_folder='/static/css',
     static_url_path='/static'
 )
 port = int(os.environ.get("PORT", 5000))

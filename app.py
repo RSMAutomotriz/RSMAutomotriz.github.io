@@ -443,7 +443,7 @@ def create_auto():
         
         return redirect(url_for('index'))
     
-    return render_template('create_auto.html')
+    return render_template('nuevo_auto.html')
 
 @app.route('/auto/<int:auto_id>')
 def view_auto(auto_id):

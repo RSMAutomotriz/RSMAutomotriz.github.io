@@ -5,35 +5,51 @@
     <h1 class="title">Detalles del Vehículo</h1>
     
     {% if auto %}
-    <form method="POST" action="{{ url_for('editar_mision', id=auto[0]) }}">
+    <form method="POST" action="{{ url_for('view_auto', id=auto[0]) }}">
         <div class="details-grid">
             <div class="detail-item">
-                <label class="label">Nombre</label>
-                <input type="text" name="name" value="{{ auto[1] }}" required>
+                <div class="label">Propietario:</div>
+                <div class="value">
+                    <input type="text" name="name" value="{{ auto[1] }}" required>
+                </div>
             </div>
+            
             <div class="detail-item">
-                <label class="label">Matrícula</label>
-                <input type="text" name="matricula" value="{{ auto[2] }}" required>
+                <div class="label">Matrícula:</div>
+                <div class="value">
+                    <input type="text" name="matricula" value="{{ auto[2] }}" required>
+                </div>
             </div>
+            
             <div class="detail-item">
-                <label class="label">Marca</label>
-                <input type="text" name="marca" value="{{ auto[3] }}" required>
+                <div class="label">Marca:</div>
+                <div class="value">
+                    <input type="text" name="marca" value="{{ auto[3] }}" required>
+                </div>
             </div>
+            
             <div class="detail-item">
-                <label class="label">Modelo</label>
-                <input type="text" name="model" value="{{ auto[4] }}" required>
+                <div class="label">Modelo:</div>
+                <div class="value">
+                    <input type="text" name="model" value="{{ auto[4] }}" required>
+                </div>
             </div>
+            
             <div class="detail-item">
-                <label class="label">Año</label>
-                <input type="text" name="year" value="{{ auto[5] }}" required>
+                <div class="label">Año:</div>
+                <div class="value">
+                    <input type="number" name="year" value="{{ auto[5] }}" required>
+                </div>
             </div>
+            
             <div class="detail-item">
-                <label class="label">Motor</label>
-                <input type="text" name="motor" value="{{ auto[6] }}" required>
+                <div class="label">Motor c.c:</div>
+                <div class="value">
+                    <input type="text" name="motor" value="{{ auto[6] }}" required>
+                </div>
             </div>
         </div>
 
-        <h2 class="subtitle">Historial de Trabajos</h2>
         <table class="work-table">
             <thead>
                 <tr>
@@ -44,35 +60,18 @@
                 </tr>
             </thead>
             <tbody id="workTableBody">
-                {% if trabajos %}
-                    {% for trabajo in trabajos %}
-                    <tr>
-                        <td><input type="date" name="date[]" value="{{ trabajo[9] }}" required></td>
-                        <td><input type="text" name="kl[]" value="{{ trabajo[7] }}" required></td>
-                        <td class="work-cell">
-                            <textarea name="work[]" class="work-input" required>{{ trabajo[8] }}</textarea>
-                        </td>
-                        <td>
-                            <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td><input type="date" name="date[]" value="{{ today }}" required></td>
-                        <td><input type="text" name="kl[]" required></td>
-                        <td class="work-cell">
-                            <textarea name="work[]" class="work-input" required></textarea>
-                        </td>
-                        <td>
-                            <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
-                        </td>
-                    </tr>
-                {% endif %}
+                {% for trabajo in trabajos %}
+                <tr>
+                    <td><input type="date" name="date[]" value="{{ trabajo[9] }}" required></td>
+                    <td><input type="text" name="kl[]" value="{{ trabajo[7] }}" required></td>
+                    <td><input type="text" name="work[]" value="{{ trabajo[8] }}" required></td>
+                    <td>
+                        <button type="button" class="btn-eliminar" onclick="eliminarFila(this, {{ trabajo[0] }})">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
         
@@ -80,24 +79,38 @@
             <button type="button" class="button-action" onclick="agregarFila()">
                 <i class="fas fa-plus"></i> Agregar Trabajo
             </button>
-            <button type="submit" class="button-action">
-                <i class="fas fa-save"></i> Guardar Cambios
-            </button>
-            <a href="{{ url_for('buscar_auto') }}" class="button-action">
-                <i class="fas fa-times"></i> Cancelar
-            </a>
+            <button type="submit" class="button-action">Guardar Cambios</button>
+            <a href="{{ url_for('buscar_auto') }}" class="button-action">Cancelar</a>        
         </div>
     </form>
     {% endif %}
 </div>
 
 <script>
-    function eliminarFila(boton) {
+    function eliminarFila(boton, trabajoId) {
         const tbody = document.getElementById('workTableBody');
-        if (tbody.children.length > 1) {
-            boton.closest('tr').remove();
+        const fila = boton.closest('tr');
+        
+        if (tbody.rows.length > 1) {
+            if (confirm('¿Estás seguro de eliminar este registro?')) {
+                fetch(`/eliminar_trabajo/${trabajoId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        fila.remove();
+                    } else {
+                        alert(data.message || 'Error al eliminar el registro');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar el registro');
+                });
+            }
         } else {
-            alert('Debe mantener al menos un registro de trabajo');
+            alert('Debe mantener al menos una fila de trabajo');
         }
     }
     
@@ -108,9 +121,7 @@
         nuevaFila.innerHTML = `
             <td><input type="date" name="date[]" value="${fechaHoy}" required></td>
             <td><input type="text" name="kl[]" required></td>
-            <td class="work-cell">
-                <textarea name="work[]" class="work-input" required></textarea>
-            </td>
+            <td><input type="text" name="work[]" required></td>
             <td>
                 <button type="button" class="btn-eliminar" onclick="eliminarFila(this)">
                     <i class="fas fa-trash"></i> Eliminar

@@ -58,7 +58,6 @@
             <div class="button-group">
                 <a href="{{ url_for('buscar_auto') }}" class="button-action">Nueva Búsqueda</a>
                 <a href="{{ url_for('editar_mision', id=auto[0]) }}" class="button-action">Editar</a>
-                <a href="{{ url_for('buscar_auto') }}" class="button-action">Volver</a>
                 <a href="{{ url_for('ver_imagenes', matricula=auto[2]) }}" class="button-action">Ver imágenes del vehículo</a>
             </div>
         {% endif %}

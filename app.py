@@ -596,7 +596,7 @@ def buscar_auto():
     return render_template('buscar.html')
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
-def editar_mision(id):
+def editar_auto(id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -610,85 +610,40 @@ def editar_mision(id):
             year = request.form.get('year')
             motor = request.form.get('motor')
             
+            # Actualizar información principal del auto
+            if not update_auto(id, name, matricula, marca, model, year, motor):
+                flash('Error al actualizar la información del vehículo')
+                return redirect(url_for('editar_auto', id=id))
+            
+            # Actualizar trabajos
             dates = request.form.getlist('date[]')
             kls = request.form.getlist('kl[]')
             works = request.form.getlist('work[]')
             
-            conn = get_db_connection()
-            if conn is None:
-                flash('Error de conexión a la base de datos')
-                return redirect(url_for('buscar_auto'))
+            if not update_trabajos(id, dates, kls, works):
+                flash('Error al actualizar los trabajos')
+                return redirect(url_for('editar_auto', id=id))
             
-            cur = conn.cursor()
-            
-            # Actualizar el auto principal
-            cur.execute("""
-                UPDATE automovil 
-                SET name = %s, 
-                    matricula = %s, 
-                    marca = %s, 
-                    model = %s, 
-                    year = %s, 
-                    motor = %s 
-                WHERE id = %s
-                """, (name, matricula, marca, model, year, motor, id))
-            
-            # Insertar los nuevos trabajos
-            for date, kl, work in zip(dates, kls, works):
-                if work.strip():  # Solo insertar si hay trabajo
-                    cur.execute("""
-                        INSERT INTO automovil 
-                        (name, matricula, marca, model, year, motor, kl, work, date) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """, 
-                        (name, matricula, marca, model, year, motor, kl, work, date))
-            
-            conn.commit()
             flash('Vehículo actualizado exitosamente')
             return redirect(url_for('buscar_auto'))
             
         except Exception as e:
-            print(f"Error al guardar: {e}")
+            print(f"Error al actualizar: {e}")
             flash('Error al actualizar el vehículo')
-            if 'conn' in locals():
-                conn.rollback()
-            
-        finally:
-            if 'cur' in locals():
-                cur.close()
-            if 'conn' in locals():
-                conn.close()
+            return redirect(url_for('editar_auto', id=id))
     
     # GET request - obtener datos
-    conn = get_db_connection()
-    if conn is None:
-        flash('Error de conexión a la base de datos')
-        return redirect(url_for('buscar_auto'))
-    
     try:
-        cur = conn.cursor()
-        
-        # Obtener el auto principal
-        cur.execute("""
-            SELECT * FROM automovil 
-            WHERE id = %s
-            """, (id,))
-        auto = cur.fetchone()
-        
+        # Obtener información del auto
+        auto = get_auto(id)
         if not auto:
             flash('Vehículo no encontrado')
             return redirect(url_for('buscar_auto'))
         
-        # Obtener todos los trabajos relacionados
-        cur.execute("""
-            SELECT * FROM automovil 
-            WHERE matricula = %s 
-            AND id != %s
-            ORDER BY date DESC
-            """, (auto[2], id))
-        trabajos = cur.fetchall()
+        # Obtener trabajos relacionados
+        trabajos = get_trabajos(id)
         
-        # Convertir fechas a formato string
+        # Formatear fechas para el template
         trabajos_formatted = []
         for trabajo in trabajos:
             trabajo_list = list(trabajo)
@@ -705,12 +660,6 @@ def editar_mision(id):
         print(f"Error al cargar datos: {e}")
         flash('Error al cargar los datos del vehículo')
         return redirect(url_for('buscar_auto'))
-        
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
 
 @app.route('/eliminar_trabajo/<int:trabajo_id>', methods=['POST'])
 def eliminar_trabajo(trabajo_id):

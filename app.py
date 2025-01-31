@@ -552,26 +552,30 @@ def buscar_auto():
         return redirect(url_for('login'))
     
     if request.method == 'POST':
-        matricula = request.form.get('matricula', '')
+        matricula = request.form.get('matricula', '').strip()
         
-        conn = get_db_connection()
-        if conn is None:
-            flash('Error de conexión a la base de datos')
+        if not matricula:
+            flash('Por favor ingrese una matrícula')
             return render_template('buscar.html')
-        
+            
         try:
+            conn = get_db_connection()
+            if conn is None:
+                flash('Error de conexión a la base de datos')
+                return render_template('buscar.html')
+            
             cur = conn.cursor()
-            # Buscar el auto principal
+            
+            # Primero verificar si existe el vehículo
             cur.execute("""
                 SELECT * FROM automovil 
-                WHERE matricula = %s
-                ORDER BY id ASC
+                WHERE matricula = %s AND leader_id IS NOT NULL
                 LIMIT 1
                 """, (matricula,))
             auto = cur.fetchone()
             
             if auto:
-                # Obtener todos los trabajos relacionados
+                # Si existe, obtener todos los trabajos relacionados
                 cur.execute("""
                     SELECT * FROM automovil 
                     WHERE matricula = %s 
@@ -579,20 +583,36 @@ def buscar_auto():
                     """, (matricula,))
                 trabajos = cur.fetchall()
                 
-                return render_template('resultado.html', auto=auto, trabajos=trabajos)
+                # Formatear fechas para el template
+                trabajos_formatted = []
+                for trabajo in trabajos:
+                    trabajo_list = list(trabajo)
+                    if isinstance(trabajo[9], datetime.datetime):  # Asumiendo que la fecha está en el índice 9
+                        trabajo_list[9] = trabajo[9].strftime('%Y-%m-%d')
+                    trabajos_formatted.append(tuple(trabajo_list))
+                
+                cur.close()
+                conn.close()
+                
+                return render_template('resultado.html', 
+                                     auto=auto, 
+                                     trabajos=trabajos_formatted)
             else:
+                cur.close()
+                conn.close()
                 flash('No se encontró ningún vehículo con esa matrícula')
-        
+                return render_template('buscar.html')
+                
         except Exception as e:
-            print(f"Error en buscar_auto: {e}")
-            flash('Error al buscar el vehículo')
-        
-        finally:
+            print(f"Error en búsqueda: {e}")
             if 'cur' in locals():
                 cur.close()
             if 'conn' in locals():
                 conn.close()
+            flash('Error al realizar la búsqueda')
+            return render_template('buscar.html')
     
+    # Si es GET, solo mostrar el formulario
     return render_template('buscar.html')
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])

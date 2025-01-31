@@ -1,66 +1,80 @@
 {% extends "index.html" %}
 {% block title %}Resultado de Búsqueda{% endblock %}
 {% block content %}
-<div class="search-container">
-    <div class="result-box">
-        <h2>Detalles del Vehículo</h2>
-        {% if auto %}
-            <div class="vehicle-details">
-                <div class="detail-row">
-                    <div class="detail-label">Propietario:</div>
-                    <div class="detail-value">{{ auto[1] }}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Matrícula:</div>
-                    <div class="detail-value">{{ auto[2] }}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Marca:</div>
-                    <div class="detail-value">{{ auto[3] }}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Modelo:</div>
-                    <div class="detail-value">{{ auto[4] }}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Año:</div>
-                    <div class="detail-value">{{ auto[5] }}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Motor c.c:</div>
-                    <div class="detail-value">{{ auto[6] }}</div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">Recibido por:</div>
-                    <div class="detail-value">{{ auto[-1] }}</div>
-                </div>
-
-                <table class="work-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Kilometraje</th>
-                            <th>Trabajo Realizado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for trabajo in trabajos %}
-                        <tr>
-                            <td>{{ trabajo[9] }}</td>
-                            <td>{{ trabajo[7] }}</td>
-                            <td>{{ trabajo[8] }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<div class="container_result">
+    {% if auto %}
+        <h1 class="title">Detalles del Vehículo</h1>
+        <div class="details-grid">
+            <div class="detail-item">
+                <div class="label">Propietario:</div>
+                <div class="value">{{ auto[1] }}</div>
             </div>
+            
+            <div class="detail-item">
+                <div class="label">Matrícula:</div>
+                <div class="value">{{ auto[2] }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="label">Marca:</div>
+                <div class="value">{{ auto[3] }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="label">Modelo:</div>
+                <div class="value">{{ auto[4] }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="label">Año:</div>
+                <div class="value">{{ auto[5] }}</div>
+            </div>
+            
+            <div class="detail-item">
+                <div class="label">Motor c.c:</div>
+                <div class="value">{{ auto[6] }}</div>
+            </div>
+        </div>
 
-            <div class="button-group">
-                <a href="{{ url_for('buscar_auto') }}" class="button-action">Nueva Búsqueda</a>
-                <a href="{{ url_for('editar_mision', id=auto[0]) }}" class="button-action">Editar</a>
-                <a href="{{ url_for('ver_imagenes', matricula=auto[2]) }}" class="button-action">Ver imágenes del vehículo</a>
+        {% if trabajos %}
+            <h2 class="subtitle">Historial de Trabajos</h2>
+            <table class="work-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Kilometraje</th>
+                        <th>Trabajo Realizado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trabajo in trabajos %}
+                    <tr>
+                        <td>{{ trabajo[1] }}</td>
+                        <td>{{ trabajo[2] }}</td>
+                        <td>{{ trabajo[3] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay trabajos registrados para este vehículo.</p>
+        {% endif %}
+        
+        <div class="button-container">
+            <a href="{{ url_for('editar_auto', id=auto[0]) }}" class="button-action">Editar</a>
+            <a href="{{ url_for('buscar_auto') }}" class="button-action">Nueva Búsqueda</a>
+            <a href="{{ url_for('ver_imagenes', matricula=auto[2]) }}" class="button-action">Ver imágenes del vehículo</a>
+        </div>
+    {% endif %}
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-info">{{ message }}</div>
+                {% endfor %}
             </div>
         {% endif %}
-    </div>
+    {% endwith %}
 </div>
 {% endblock %}

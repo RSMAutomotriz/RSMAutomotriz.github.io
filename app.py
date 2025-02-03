@@ -567,10 +567,8 @@ def buscar_auto():
             
             cur = conn.cursor()
             
-            print(f"Buscando matrícula: {matricula}")  # Debug log
-            
             # Buscar el vehículo principal
-            cur.execute("""
+            cur.execute(""" 
                 SELECT * FROM automovil 
                 WHERE matricula = %s 
                 AND leader_id IS NOT NULL
@@ -581,10 +579,8 @@ def buscar_auto():
             auto = cur.fetchone()
             
             if auto:
-                print(f"Vehículo encontrado con ID: {auto[0]}")  # Debug log
-                
                 # Obtener trabajos
-                cur.execute("""
+                cur.execute(""" 
                     SELECT id, date, kl, work 
                     FROM automovil 
                     WHERE matricula = %s 
@@ -593,7 +589,6 @@ def buscar_auto():
                 """, (matricula,))
                 
                 trabajos = cur.fetchall()
-                print(f"Número de trabajos encontrados: {len(trabajos)}")  # Debug log
                 
                 # Cerrar la conexión
                 cur.close()
@@ -603,10 +598,9 @@ def buscar_auto():
                                      auto=auto,
                                      trabajos=trabajos)
             else:
-                print(f"No se encontró vehículo con matrícula: {matricula}")  # Debug log
+                flash('No se encontró ningún vehículo con esa matrícula')
                 cur.close()
                 conn.close()
-                flash('No se encontró ningún vehículo con esa matrícula')
                 return render_template('buscar.html')
                 
         except Exception as e:

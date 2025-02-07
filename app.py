@@ -583,12 +583,14 @@ def buscar_auto():
             
             cur = conn.cursor()
             
-            # Modificamos la consulta para eliminar created_at
+            # Modified query to join with users table and get leader's name
             cur.execute(""" 
-                SELECT * FROM automovil 
-                WHERE matricula = %s 
-                AND leader_id IS NOT NULL
-                ORDER BY date DESC 
+                SELECT a.*, u.name as recibido_por 
+                FROM automovil a 
+                JOIN users u ON a.leader_id = u.id
+                WHERE a.matricula = %s 
+                AND a.leader_id IS NOT NULL
+                ORDER BY a.date DESC 
                 LIMIT 1
             """, (matricula,))
             

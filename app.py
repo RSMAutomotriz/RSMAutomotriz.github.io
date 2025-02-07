@@ -583,56 +583,71 @@ def buscar_auto():
             
             cur = conn.cursor()
             
-            # Modified query to join with users table and get leader's name
-            cur.execute(""" 
-                SELECT a.*, u.name as recibido_por 
-                FROM automovil a 
-                JOIN users u ON a.leader_id = u.id
-                WHERE a.matricula = %s 
-                AND a.leader_id IS NOT NULL
-                ORDER BY a.date DESC 
-                LIMIT 1
-            """, (matricula,))
-            
-            auto = cur.fetchone()
-            
-            if auto:
-                # Consulta para trabajos
+            try:
+                # More detailed query with error checking
                 cur.execute(""" 
-                    SELECT id, date, kl, work 
-                    FROM automovil 
-                    WHERE matricula = %s 
-                    AND leader_id IS NULL
-                    ORDER BY date DESC
+                    SELECT a.*, u.name as recibido_por 
+                    FROM automovil a 
+                    LEFT JOIN users u ON a.leader_id = u.id
+                    WHERE a.matricula = %s 
+                    AND a.leader_id IS NOT NULL
+                    ORDER BY a.date DESC 
+                    LIMIT 1
                 """, (matricula,))
                 
-                trabajos = cur.fetchall()
+                auto = cur.fetchone()
                 
-                cur.close()
-                conn.close()
+                # Additional debug logging
+                print("Debug - Auto data:", auto)
+                print("Debug - Matricula:", matricula)
                 
-                # Aseguramos que las fechas estén en formato correcto
-                if trabajos:
-                    trabajos = [(t[0], 
-                               t[1].strftime('%Y-%m-%d') if isinstance(t[1], datetime.datetime) else t[1],
-                               t[2], t[3]) for t in trabajos]
+                if auto:
+                    # Consulta para trabajos
+                    cur.execute(""" 
+                        SELECT id, date, kl, work 
+                        FROM automovil 
+                        WHERE matricula = %s 
+                        AND leader_id IS NULL
+                        ORDER BY date DESC
+                    """, (matricula,))
+                    
+                    trabajos = cur.fetchall()
+                    
+                    # More debug logging
+                    print("Debug - Trabajos:", trabajos)
+                    
+                    # Aseguramos que las fechas estén en formato correcto
+                    if trabajos:
+                        trabajos = [(t[0], 
+                                   t[1].strftime('%Y-%m-%d') if isinstance(t[1], datetime.datetime) else t[1],
+                                   t[2], t[3]) for t in trabajos]
+                    
+                    return render_template('resultado.html', 
+                                         auto=auto,
+                                         trabajos=trabajos)
+                else:
+                    # More specific error message
+                    flash(f'No se encontró ningún vehículo con la matrícula {matricula}')
+                    return render_template('buscar.html')
                 
-                return render_template('resultado.html', 
-                                     auto=auto,
-                                     trabajos=trabajos)
-            else:
-                flash('No se encontró ningún vehículo con esa matrícula')
-                cur.close()
-                conn.close()
+            except psycopg2.Error as db_error:
+                # Specific database error handling
+                print(f"Database error: {db_error}")
+                flash(f'Error de base de datos: {db_error}')
                 return render_template('buscar.html')
+            
+            finally:
+                cur.close()
+                conn.close()
                 
         except Exception as e:
-            print(f"Error en la búsqueda: {str(e)}")  # Para debugging
-            if 'cur' in locals():
-                cur.close()
-            if 'conn' in locals():
-                conn.close()
-            flash('Error al realizar la búsqueda')
+            # Catch-all error handling with more details
+            print(f"Unexpected error in buscar_auto: {e}")
+            print(f"Error type: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()  # This will print the full stack trace
+            
+            flash(f'Error inesperado al realizar la búsqueda: {e}')
             return render_template('buscar.html')
     
     return render_template('buscar.html')

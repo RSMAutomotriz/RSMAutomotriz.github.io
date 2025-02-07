@@ -34,6 +34,10 @@
                 <div class="label">Motor c.c:</div>
                 <div class="value">{{ auto[6] }}</div>
             </div>
+            <div class="detail-item">
+                <div class="label">Recibido por:</div>
+                <div class="value">{{ auto[7] }}</div>
+            </div>
         </div>
 
         {% if trabajos %}
@@ -57,7 +61,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>No hay trabajos registrados para este vehículo.</p>
+            <p>No hay trabajos registrados para este vehículo.</p>  
         {% endif %}
         
         <div class="button-container">

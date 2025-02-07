@@ -225,7 +225,24 @@ def init_db():
     
     cur = conn.cursor()
     
-    # Primero verificar si la columna matricula ya tiene la restricción única
+    # Crear tabla automovil si no existe
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS automovil (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100),
+            matricula VARCHAR(20),
+            marca VARCHAR(50),
+            model VARCHAR(50),
+            year INTEGER,
+            motor VARCHAR(20),
+            kl VARCHAR(20),
+            work TEXT,
+            date DATE,
+            leader_id INTEGER REFERENCES users(id)
+        )
+    ''')
+    
+    # Verificar si la columna matricula ya tiene la restricción única
     cur.execute("""
         SELECT constraint_name 
         FROM information_schema.table_constraints 
@@ -256,7 +273,7 @@ def init_db():
         )
     ''')
     
-    # Intentar agregar la llave foránea si no existe
+    # Verificar y agregar la llave foránea si no existe
     cur.execute("""
         SELECT constraint_name 
         FROM information_schema.table_constraints 
@@ -553,13 +570,12 @@ def buscar_auto():
     
     if request.method == 'POST':
         try:
-            matricula = request.form.get('matricula', '').strip().upper()  # Convertir a mayúsculas
+            matricula = request.form.get('matricula', '').strip().upper()
             
             if not matricula:
                 flash('Por favor ingrese una matrícula')
                 return render_template('buscar.html')
             
-            # Obtener conexión
             conn = get_db_connection()
             if conn is None:
                 flash('Error de conexión a la base de datos')
@@ -567,19 +583,19 @@ def buscar_auto():
             
             cur = conn.cursor()
             
-            # Buscar el vehículo principal
+            # Modificamos la consulta para eliminar created_at
             cur.execute(""" 
                 SELECT * FROM automovil 
                 WHERE matricula = %s 
                 AND leader_id IS NOT NULL
-                ORDER BY created_at DESC 
+                ORDER BY date DESC 
                 LIMIT 1
             """, (matricula,))
             
             auto = cur.fetchone()
             
             if auto:
-                # Obtener trabajos
+                # Consulta para trabajos
                 cur.execute(""" 
                     SELECT id, date, kl, work 
                     FROM automovil 
@@ -590,9 +606,14 @@ def buscar_auto():
                 
                 trabajos = cur.fetchall()
                 
-                # Cerrar la conexión
                 cur.close()
                 conn.close()
+                
+                # Aseguramos que las fechas estén en formato correcto
+                if trabajos:
+                    trabajos = [(t[0], 
+                               t[1].strftime('%Y-%m-%d') if isinstance(t[1], datetime.datetime) else t[1],
+                               t[2], t[3]) for t in trabajos]
                 
                 return render_template('resultado.html', 
                                      auto=auto,
@@ -604,15 +625,17 @@ def buscar_auto():
                 return render_template('buscar.html')
                 
         except Exception as e:
-            print(f"Error en la búsqueda: {str(e)}")  # Debug log
+            print(f"Error en la búsqueda: {str(e)}")  # Para debugging
             if 'cur' in locals():
                 cur.close()
             if 'conn' in locals():
                 conn.close()
             flash('Error al realizar la búsqueda')
             return render_template('buscar.html')
+    print(f"Matrícula buscada: {matricula}")
+    auto = cur.fetchone()
+    print(f"Auto encontrado: {auto}")
     
-    # GET request
     return render_template('buscar.html')
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])

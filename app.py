@@ -632,9 +632,6 @@ def buscar_auto():
                 conn.close()
             flash('Error al realizar la búsqueda')
             return render_template('buscar.html')
-    print(f"Matrícula buscada: {matricula}")
-    auto = cur.fetchone()
-    print(f"Auto encontrado: {auto}")
     
     return render_template('buscar.html')
 

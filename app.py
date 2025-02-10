@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 import os
-
+from config import Config 
 app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)

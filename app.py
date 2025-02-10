@@ -1,27 +1,22 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 import os
+
+# Importar db de models
+from models import db, User, Auto, Servicio, Imagen
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Cambio en la inicialización de SQLAlchemy
-db = SQLAlchemy(app)
+# Inicializar db con la app
+db.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
 
-# Importaciones de modelos después de inicializar db
-from models import User, Auto, Servicio, Imagen
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))

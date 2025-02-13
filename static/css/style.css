@@ -1,12 +1,8 @@
 :root {
-    --primary-color: #0d6efd;
+    --primary-color: #0000ff;
     --danger-color: #dc3545;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
-    --info-color: #0dcaf0;
-    --warning-color: #ffc107;
     --text-color: #212529;
-    --light-bg: #f8f9fa;
+    --light-bg: #f0f0f0;
     --border-color: #dee2e6;
     --white: #ffffff;
 }
@@ -17,118 +13,113 @@ body {
     line-height: 1.5;
     color: var(--text-color);
     background-color: var(--light-bg);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
 }
 
-/* Navbar Styles */
-.navbar {
-    background-color: var(--primary-color);
-    padding: 1rem 0;
-}
-
-.navbar-brand {
-    color: var(--white);
-    font-size: 1.25rem;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.navbar-dark .navbar-nav .nav-link {
-    color: rgba(255, 255, 255, 0.85);
-    padding: 0.5rem 1rem;
-    transition: color 0.15s ease-in-out;
-}
-
-.navbar-dark .navbar-nav .nav-link:hover {
-    color: var(--white);
-}
-
-.navbar-dark .navbar-nav .nav-link.text-danger {
-    color: var(--danger-color) !important;
-}
-
-/* Container and Grid */
+/* Container and Layout */
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
 }
 
-.row {
-    display: flex;
-    flex-wrap: wrap;
-    margin: -0.5rem;
+/* Header and Navigation */
+.header {
+    background-color: var(--white);
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.col-md-4, .col-md-6, .col-md-8, .col-md-10 {
-    padding: 0.5rem;
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.navbar-buttons {
+    display: flex;
+    gap: 1rem;
 }
 
 /* Card Styles */
 .card {
     background-color: var(--white);
-    border-radius: 0.375rem;
-    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    border: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    margin-bottom: 1rem;
+    margin: 2rem auto;
+    max-width: 600px;
+    padding: 2rem;
 }
 
-.card-header {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.card-header.bg-primary {
-    background-color: var(--primary-color) !important;
-    color: var(--white);
-}
-
-.card-body {
-    padding: 1.5rem;
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-align: center;
 }
 
 /* Form Styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
 .form-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
+    color: var(--text-color);
 }
 
 .form-control {
     display: block;
     width: 100%;
-    padding: 0.375rem 0.75rem;
+    padding: 0.75rem;
     font-size: 1rem;
     line-height: 1.5;
     color: var(--text-color);
     background-color: var(--white);
     border: 1px solid var(--border-color);
-    border-radius: 0.25rem;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
 }
 
 .form-control:focus {
-    border-color: #86b7fe;
+    border-color: var(--primary-color);
     outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.1);
 }
 
 textarea.form-control {
     min-height: 100px;
+    resize: vertical;
 }
 
 /* Button Styles */
 .btn {
     display: inline-block;
-    font-weight: 400;
+    font-weight: 500;
     text-align: center;
     text-decoration: none;
     vertical-align: middle;
     cursor: pointer;
-    padding: 0.375rem 0.75rem;
+    padding: 0.75rem 1.5rem;
     font-size: 1rem;
-    border-radius: 0.25rem;
-    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
     border: none;
+    width: 100%;
+    margin-bottom: 0.5rem;
 }
 
 .btn-primary {
@@ -137,7 +128,7 @@ textarea.form-control {
 }
 
 .btn-primary:hover {
-    background-color: #0b5ed7;
+    background-color: #0000dd;
 }
 
 .btn-danger {
@@ -149,117 +140,145 @@ textarea.form-control {
     background-color: #bb2d3b;
 }
 
-.btn-secondary {
-    background-color: var(--secondary-color);
-    color: var(--white);
+.btn-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
-.btn-secondary:hover {
-    background-color: #5c636a;
-}
-
-.btn-link {
-    color: var(--primary-color);
-    text-decoration: none;
-}
-
-.btn-link:hover {
-    text-decoration: underline;
+.btn-group .btn {
+    margin-bottom: 0;
 }
 
 /* Table Styles */
+.table-container {
+    margin-top: 1.5rem;
+    overflow-x: auto;
+}
+
 .table {
     width: 100%;
     margin-bottom: 1rem;
     border-collapse: collapse;
+    background-color: var(--white);
 }
 
 .table th,
 .table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* Alert Styles */
-.alert {
     padding: 1rem;
-    margin-bottom: 1rem;
-    border: 1px solid transparent;
-    border-radius: 0.25rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
 }
 
-.alert-info {
-    background-color: #cff4fc;
-    border-color: #b6effb;
-    color: #055160;
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
 }
 
-/* Image Styles */
-.img-fluid {
-    max-width: 100%;
+/* Logo Styles */
+.logo-container {
+    text-align: center;
+    margin: 2rem auto;
+    max-width: 200px;
+}
+
+.logo-container img {
+    width: 100%;
     height: auto;
 }
 
-.dashboard-image {
-    max-width: 300px;
-    margin: 2rem auto;
+/* Welcome Message */
+.welcome-message {
+    text-align: center;
+    font-size: 1.5rem;
+    margin: 2rem 0;
+    color: var(--text-color);
+}
+
+/* Links */
+.link-primary {
+    color: var(--primary-color);
+    text-decoration: none;
+    text-align: center;
     display: block;
+    margin-top: 1rem;
+}
+
+.link-primary:hover {
+    text-decoration: underline;
+}
+
+/* Search Form */
+.search-form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.search-form .form-control {
+    margin-bottom: 0;
+}
+
+.search-form .btn {
+    width: auto;
+    white-space: nowrap;
+}
+
+/* Vehicle Details */
+.vehicle-details {
+    display: grid;
+    grid-gap: 1rem;
+}
+
+.vehicle-details .form-group {
+    margin-bottom: 1.5rem;
+}
+
+/* Service History */
+.service-history {
+    margin-top: 2rem;
+}
+
+/* Date Input Specific Styles */
+input[type="date"].form-control {
+    padding: 0.625rem 0.75rem;
 }
 
 /* Utility Classes */
-.text-center {
-    text-align: center;
-}
+.text-center { text-align: center; }
+.mt-3 { margin-top: 1rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.d-flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
 
-.text-end {
-    text-align: right;
-}
-
-.mb-0 { margin-bottom: 0 !important; }
-.mb-3 { margin-bottom: 1rem !important; }
-.mb-4 { margin-bottom: 1.5rem !important; }
-.mt-3 { margin-top: 1rem !important; }
-.mt-4 { margin-top: 1.5rem !important; }
-.me-2 { margin-right: 0.5rem !important; }
-
-/* Responsive Adjustments */
+/* Responsive Design */
 @media (max-width: 768px) {
-    .col-md-4, .col-md-6, .col-md-8, .col-md-10 {
+    .card {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .search-form {
+        flex-direction: column;
+    }
+    
+    .search-form .btn {
         width: 100%;
     }
     
-    .navbar-nav {
-        padding-top: 0.5rem;
+    .navbar-buttons {
+        gap: 0.5rem;
     }
     
-    .text-end {
-        text-align: center;
+    .table-container {
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+        padding: 0 1.5rem;
     }
-    
-    .btn {
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-}
-
-/* Navbar Toggle Button */
-.navbar-toggler {
-    padding: 0.25rem 0.75rem;
-    background-color: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.25rem;
-}
-
-.navbar-toggler-icon {
-    display: inline-block;
-    width: 1.5em;
-    height: 1.5em;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 100%;
 }

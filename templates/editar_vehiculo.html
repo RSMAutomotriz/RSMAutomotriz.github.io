@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Vehículo - RSM Automotriz{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Editar Vehículo</h4>
+                <ahref="{{ url_for('ver_vehiculo', matricula=vehiculo.matricula) }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('editar_vehiculo', matricula=vehiculo.matricula) }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="propietario" class="form-label">Propietario</label>
+                            <input type="text" class="form-control" id="propietario" name="propietario" value="{{ vehiculo.propietario }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Matrícula</label>
+                            <input type="text" class="form-control" value="{{ vehiculo.matricula }}" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="marca" class="form-label">Marca</label>
+                            <input type="text" class="form-control" id="marca" name="marca" value="{{ vehiculo.marca }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="modelo" class="form-label">Modelo</label>
+                            <input type="text" class="form-control" id="modelo" name="modelo" value="{{ vehiculo.modelo }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="año" class="form-label">Año</label>
+                            <input type="number" class="form-control" id="año" name="año" value="{{ vehiculo.año }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="motor" class="form-label">Motor (c.c.)</label>
+                        <input type="text" class="form-control" id="motor" name="motor" value="{{ vehiculo.motor }}" required>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Historial de Trabajos</h5>
+                    <div id="trabajos-container">
+                        {% for trabajo in trabajos %}
+                        <div class="card mb-3 trabajo-item">
+                            <div class="card-body">
+                                <input type="hidden" name="trabajo_id" value="{{ trabajo.id }}">
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Fecha</label>
+                                        <input type="text" class="form-control" value="{{ trabajo.fecha.strftime('%d/%m/%Y') }}" readonly>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Kilometraje</label>
+                                        <input type="number" class="form-control" name="kilometraje" value="{{ trabajo.kilometraje }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Descripción</label>
+                                        <div class="input-group">
+                                            <textarea class="form-control" name="descripcion" rows="2" required>{{ trabajo.descripcion }}</textarea>
+                                            <button type="button" class="btn btn-danger eliminar-trabajo" data-id="{{ trabajo.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div id="nuevos-trabajos"></div>
+                    
+                    <button type="button" id="agregar-trabajo" class="btn btn-success mb-4">
+                        <i class="fas fa-plus me-1"></i> Agregar Nuevo Trabajo
+                    </button>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('ver_vehiculo', matricula=vehiculo.matricula) }}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        let nuevoTrabajoIndex = 0;
+        
+        $('#agregar-trabajo').click(function() {
+            const html = `
+                <div class="card mb-3 nuevo-trabajo-item">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha</label>
+                                <input type="text" class="form-control" value="{{ datetime.now().strftime('%d/%m/%Y') }}" readonly>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Kilometraje</label>
+                                <input type="number" class="form-control" name="nuevo_kilometraje" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Descripción</label>
+                                <div class="input-group">
+                                    <textarea class="form-control" name="nueva_descripcion" rows="2" required></textarea>
+                                    <button type="button" class="btn btn-danger eliminar-nuevo-trabajo">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#nuevos-trabajos').append(html);
+            nuevoTrabajoIndex++;
+        });
+
+        // Eliminar trabajo existente
+        $(document).on('click', '.eliminar-trabajo', function() {
+            const trabajoId = $(this).data('id');
+            if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
+                $.ajax({
+                    url: "{{ url_for('eliminar_trabajo', trabajo_id=0) }}".replace('0', trabajoId),
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            $(`button[data-id="${trabajoId}"]`).closest('.trabajo-item').remove();
+                        } else {
+                            alert('Error al eliminar el registro');
+                        }
+                    }
+                });
+            }
+        });
+
+        // Eliminar nuevo trabajo
+        $(document).on('click', '.eliminar-nuevo-trabajo', function() {
+            $(this).closest('.nuevo-trabajo-item').remove();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Ingresar Vehículo - RSM Automotriz{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Ingresar Nuevo Vehículo</h4>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('ingresar_vehiculo') }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="propietario" class="form-label">Propietario</label>
+                            <input type="text" class="form-control" id="propietario" name="propietario" required minlength="3">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="matricula" class="form-label">Matrícula</label>
+                            <input type="text" class="form-control" id="matricula" name="matricula" required minlength="3">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="marca" class="form-label">Marca</label>
+                            <input type="text" class="form-control" id="marca" name="marca" required minlength="3">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="modelo" class="form-label">Modelo</label>
+                            <input type="text" class="form-control" id="modelo" name="modelo" required minlength="3">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="año" class="form-label">Año</label>
+                            <input type="number" class="form-control" id="año" name="año" required min="1900" max="2099">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="motor" class="form-label">Motor (c.c.)</label>
+                            <input type="text" class="form-control" id="motor" name="motor" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="kilometraje" class="form-label">Kilometraje</label>
+                            <input type="number" class="form-control" id="kilometraje" name="kilometraje" required min="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="trabajo_realizado" class="form-label">Trabajo Realizado</label>
+                        <textarea class="form-control" id="trabajo_realizado" name="trabajo_realizado" rows="4" required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <ahref="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar Vehículo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

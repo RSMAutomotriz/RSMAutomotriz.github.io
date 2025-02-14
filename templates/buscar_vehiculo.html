@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Buscar Vehículo - RSM Automotriz{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Buscar Vehículo</h4>
+            </div>
+            <div class="card-body">
+                <form id="search-form" action="{{ url_for('ver_vehiculo', matricula='placeholder') }}" method="get">
+                    <div class="mb-3">
+                        <label for="matricula" class="form-label">Ingrese la matrícula del vehículo</label>
+                        <input type="text" class="form-control form-control-lg" id="matricula-search" placeholder="Ej: ABC123" required>
+                        <div id="matricula-feedback" class="invalid-feedback">
+                            No se encontró ningún vehículo con esa matrícula.
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Buscar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $("#matricula-search").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "{{ url_for('autocomplete') }}",
+                    dataType: "json",
+                    data: {
+                        term: request.term
+                    },
+                    success: function(data) {
+                        response(data);
+                    }
+                });
+            },
+            minLength: 2
+        });
+
+        $('#search-form').on('submit', function(e) {
+            e.preventDefault();
+            const matricula = $('#matricula-search').val();
+            if (matricula) {
+                window.location.href = "{{ url_for('ver_vehiculo', matricula='') }}" + matricula;
+            }
+        });
+    });
+</script>
+{% endblock %}

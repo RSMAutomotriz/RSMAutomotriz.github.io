@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle del Vehículo - RSM Automotriz{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Información del Vehículo</h4>
+                <div>
+                    <ahref="{{ url_for('buscar_vehiculo') }}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2">Datos del Vehículo</h5>
+                        <p><strong>Propietario:</strong> {{ vehiculo.propietario }}</p>
+                        <p><strong>Matrícula:</strong> {{ vehiculo.matricula }}</p>
+                        <p><strong>Marca:</strong> {{ vehiculo.marca }}</p>
+                        <p><strong>Modelo:</strong> {{ vehiculo.modelo }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="border-bottom pb-2">Información Técnica</h5>
+                        <p><strong>Año:</strong> {{ vehiculo.año }}</p>
+                        <p><strong>Motor:</strong> {{ vehiculo.motor }} c.c.</p>
+                        <p><strong>Registrado por:</strong> {{ usuario.nombre }}</p>
+                        <p><strong>Fecha de registro:</strong> {{ vehiculo.fecha_registro.strftime('%d/%m/%Y') if vehiculo.fecha_registro else 'N/A' }}</p>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 border-bottom pb-2">Historial de Trabajos</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Kilometraje</th>
+                                <th>Trabajo Realizado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trabajo in trabajos %}
+                            <tr>
+                                <td>{{ trabajo.fecha.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ trabajo.kilometraje }} km</td>
+                                <td>{{ trabajo.descripcion }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{{ url_for('editar_vehiculo', matricula=vehiculo.matricula) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i> Editar Vehículo
+                    </a>
+                    <ahref="{{ url_for('imagenes_vehiculo', matricula=vehiculo.matricula) }}" class="btn btn-info">
+                        <i class="fas fa-images me-1"></i> Ver Imágenes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

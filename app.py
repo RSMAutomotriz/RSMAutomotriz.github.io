@@ -267,7 +267,7 @@ def imagenes_vehiculo(matricula):
     
     return render_template('imagenes_vehiculo.html', vehiculo=vehiculo, imagenes=imagenes)
 
-@app.route('/subir_imagen/<matricula>', methods=['GET', 'POST'])
+@app.route('/subir_imagen/<matricula>', methods=['POST'])
 def subir_imagen(matricula):
     if 'usuario_id' not in session:
         return redirect(url_for('inicio'))

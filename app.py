@@ -267,42 +267,44 @@ def imagenes_vehiculo(matricula):
     
     return render_template('imagenes_vehiculo.html', vehiculo=vehiculo, imagenes=imagenes)
 
-@app.route('/subir_imagen/<matricula>', methods=['POST'])
+@app.route('/subir_imagen/<matricula>', methods=['GET', 'POST'])
 def subir_imagen(matricula):
     if 'usuario_id' not in session:
         return redirect(url_for('inicio'))
     
-    vehiculo = Vehiculo.query.filter_by(matricula=matricula).first_or_404()
-    
-    if 'imagen' not in request.files:
-        flash('No se seleccionó ningún archivo', 'danger')
+    if request.method == 'POST':
+        vehiculo = Vehiculo.query.filter_by(matricula=matricula).first_or_404()
+        
+        if 'imagen' not in request.files:
+            flash('No se seleccionó ningún archivo', 'danger')
+            return redirect(url_for('imagenes_vehiculo', matricula=matricula))
+        
+        archivo = request.files['imagen']
+        
+        if archivo.filename == '':
+            flash('No se seleccionó ningún archivo', 'danger')
+            return redirect(url_for('imagenes_vehiculo', matricula=matricula))
+        
+        if archivo:
+            nombre_seguro = secure_filename(archivo.filename)
+            nombre_archivo = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nombre_seguro}"
+            ruta_completa = os.path.join(app.config['UPLOAD_FOLDER'], nombre_archivo)
+            archivo.save(ruta_completa)
+            
+            nueva_imagen = Imagen(
+                nombre_archivo=nombre_archivo,
+                vehiculo_id=vehiculo.id
+            )
+            
+            db.session.add(nueva_imagen)
+            db.session.commit()
+            
+            flash('Imagen subida exitosamente', 'success')
+        
         return redirect(url_for('imagenes_vehiculo', matricula=matricula))
     
-    archivo = request.files['imagen']
-    
-    if archivo.filename == '':
-        flash('No se seleccionó ningún archivo', 'danger')
-        return redirect(url_for('imagenes_vehiculo', matricula=matricula))
-    
-    if archivo:
-        nombre_seguro = secure_filename(archivo.filename)
-        # Agregar timestamp al nombre para evitar colisiones
-        nombre_archivo = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nombre_seguro}"
-        ruta_completa = os.path.join(app.config['UPLOAD_FOLDER'], nombre_archivo)
-        archivo.save(ruta_completa)
-        
-        nueva_imagen = Imagen(
-            nombre_archivo=nombre_archivo,
-            vehiculo_id=vehiculo.id
-        )
-        
-        db.session.add(nueva_imagen)
-        db.session.commit()
-        
-        flash('Imagen subida exitosamente', 'success')
-    
+    # Si es GET, redirigir a la página de imágenes
     return redirect(url_for('imagenes_vehiculo', matricula=matricula))
-
 @app.route('/eliminar_imagen/<int:imagen_id>', methods=['POST'])
 def eliminar_imagen(imagen_id):
     if 'usuario_id' not in session:
